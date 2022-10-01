@@ -1,4 +1,4 @@
-name: vlr
+name: vlr2
 channels:
   - anaconda
   - pytorch
