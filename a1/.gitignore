@@ -2,3 +2,5 @@
 /VOCdevkit
 /.ipynb_checkpoints
 /.idea
+/wandb
+/__pychche__

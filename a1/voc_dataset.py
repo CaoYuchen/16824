@@ -160,7 +160,14 @@ class VOCDataset(Dataset):
             3. Make sure to return only the top_n proposals based on proposal confidence ("boxScores")!
             4. You may have to write a custom collate_fn since some of the attributes below may be variable in number for each data point
         """
-        proposals = None
+        proposals = []
+        top_n = 10
+        boxScores = self.roi_data["boxScores"].flatten()
+        for i, score in enumerate(boxScores):
+            indices = (-score).flatten().argsort()[:top_n]
+            for index in indices:
+                bbox = self.roi_data["boxes"].flatten()[i][index]
+                proposals.append([bbox[0]/width, bbox[1]/height, bbox[2]/width, bbox[3]/height])
 
 
         ret = {}
