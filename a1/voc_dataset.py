@@ -162,13 +162,20 @@ class VOCDataset(Dataset):
         """
         proposals = []
         top_n = 10
-        boxScores = self.roi_data["boxScores"].flatten()
-        for i, score in enumerate(boxScores):
-            indices = (-score).flatten().argsort()[:top_n]
-            for index in indices:
-                bbox = self.roi_data["boxes"].flatten()[i][index]
-                proposals.append([bbox[0]/width, bbox[1]/height, bbox[2]/width, bbox[3]/height])
-
+        # proposals = self.roi_data
+        # boxScores = self.roi_data["boxScores"].flatten()
+        # for i, score in enumerate(boxScores):
+        #     indices = (-score).flatten().argsort()[:top_n]
+        #     proposal = []
+        #     for index in indices:
+        #         bbox = self.roi_data["boxes"].flatten()[i][index]
+        #         proposal.append([bbox[0]/width, bbox[1]/height, bbox[2]/width, bbox[3]/height])
+        #     proposals.append(proposal)
+        boxScores = self.roi_data["boxScores"].flatten()[index]
+        indices = (-boxScores).flatten().argsort()[:top_n]
+        for i in indices:
+            bbox = self.roi_data["boxes"].flatten()[index][i]
+            proposals.append([bbox[0]/width, bbox[1]/height, bbox[2]/width, bbox[3]/height])
 
         ret = {}
         ret['image'] = img
