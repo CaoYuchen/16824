@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torchvision.models as models
 
-
 model_urls = {
     'alexnet': 'https://download.pytorch.org/models/alexnet-owt-4df8aa71.pth',
 }
@@ -11,11 +10,33 @@ class LocalizerAlexNet(nn.Module):
     def __init__(self, num_classes=20):
         super(LocalizerAlexNet, self).__init__()
         # TODO (Q1.1): Define model
-
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(64, 192, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            # nn.MaxPool2d(kernel_size=3, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=3, stride=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=1, stride=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 20, kernel_size=1, stride=1),
+        )
 
     def forward(self, x):
         # TODO (Q1.1): Define forward pass
-
+        x = self.features(x)
+        x = self.classifier(x)
         return x
 
 
@@ -23,7 +44,6 @@ class LocalizerAlexNetRobust(nn.Module):
     def __init__(self, num_classes=20):
         super(LocalizerAlexNetRobust, self).__init__()
         # TODO (Q1.7): Define model
-
 
     def forward(self, x):
         # TODO (Q1.7): Define forward pass
