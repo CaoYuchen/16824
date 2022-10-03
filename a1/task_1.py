@@ -23,7 +23,11 @@ from AlexNet import localizer_alexnet, localizer_alexnet_robust
 from voc_dataset import *
 from utils import *
 
+from torch.optim.lr_scheduler import StepLR
+
 USE_WANDB = False  # use flags, wandb is not convenient for debugging
+if (USE_WANDB):
+    wandb.init(project="vlr-hw1")
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
                      and callable(models.__dict__[name]))
@@ -52,7 +56,7 @@ parser.add_argument(
 parser.add_argument(
     '-b',
     '--batch-size',
-    default=256,
+    default=1,  # 256
     type=int,
     metavar='N',
     help='mini-batch size (default: 256)')
@@ -137,9 +141,9 @@ def main():
 
     # TODO (Q1.1): define loss function (criterion) and optimizer from [1]
     # also use an LR scheduler to decay LR by 10 every 30 epochs
-    criterion = None
-    optimizer = None
-
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
 
     # optionally resume from a checkpoint
     if args.resume:
@@ -150,6 +154,7 @@ def main():
             best_prec1 = checkpoint['best_prec1']
             model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
+            scheduler.load_state_dict(checkpoint['scheduler'])
             print("=> loaded checkpoint '{}' (epoch {})".format(
                 args.resume, checkpoint['epoch']))
         else:
@@ -163,8 +168,14 @@ def main():
     # Ensure that the sizes are 512x512
     # Also ensure that data directories are correct
     # The ones use for testing by TAs might be different
-    train_dataset = None
-    val_dataset = None
+    train_dataset = VOCDataset(split='trainval',
+                               image_size=512,
+                               top_n=300,
+                               data_dir='data/train/VOCdevkit/VOC2007/')
+    val_dataset = VOCDataset(split='test',
+                             image_size=512,
+                             top_n=300,
+                             data_dir='data/test/VOCdevkit/VOC2007/')
     train_sampler = None
 
     train_loader = torch.utils.data.DataLoader(
@@ -190,7 +201,6 @@ def main():
 
     # TODO (Q1.3): Create loggers for wandb.
     # Ideally, use flags since wandb makes it harder to debug code.
-
 
     for epoch in range(args.start_epoch, args.epochs):
         # train for one epoch
@@ -231,15 +241,18 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         # TODO (Q1.1): Get inputs from the data dict
         # Convert inputs to cuda if training on GPU
-        target = None
+        target = data["label"].cuda()
+        input = data["image"].cuda()
 
         # TODO (Q1.1): Get output from model
-        imoutput = None
+        imoutput = model(input)
 
         # TODO (Q1.1): Perform any necessary operations on the output
-
+        # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
+        maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
+        output = maxPool(imoutput).flatten(start_dim=1)
         # TODO (Q1.1): Compute loss using ``criterion``
-        loss = None
+        loss = criterion(output, target)
 
         # measure metrics and record loss
         m1 = metric1(imoutput.data, target)
@@ -249,8 +262,9 @@ def train(train_loader, model, criterion, optimizer, epoch):
         avg_m2.update(m2)
 
         # TODO (Q1.1): compute gradient and perform optimizer step
-
-
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
@@ -262,14 +276,14 @@ def train(train_loader, model, criterion, optimizer, epoch):
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                   'Metric1 {avg_m1.val:.3f} ({avg_m1.avg:.3f})\t'
                   'Metric2 {avg_m2.val:.3f} ({avg_m2.avg:.3f})'.format(
-                      epoch,
-                      i,
-                      len(train_loader),
-                      batch_time=batch_time,
-                      data_time=data_time,
-                      loss=losses,
-                      avg_m1=avg_m1,
-                      avg_m2=avg_m2))
+                epoch,
+                i,
+                len(train_loader),
+                batch_time=batch_time,
+                data_time=data_time,
+                loss=losses,
+                avg_m1=avg_m1,
+                avg_m2=avg_m2))
 
         # TODO (Q1.3): Visualize/log things as mentioned in handout at appropriate intervals
 
@@ -290,15 +304,18 @@ def validate(val_loader, model, criterion, epoch=0):
 
         # TODO (Q1.1): Get inputs from the data dict
         # Convert inputs to cuda if training on GPU
-        target = None
+        target = data["label"].cuda()
+        input = data["image"].cuda()
 
         # TODO (Q1.1): Get output from model
-        imoutput = None
+        imoutput = model(input)
 
         # TODO (Q1.1): Perform any necessary functions on the output
-
+        # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
+        maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
+        output = maxPool(imoutput).flatten(start_dim=1)
         # TODO (Q1.1): Compute loss using ``criterion``
-        loss = None
+        loss = criterion(output, target)
 
         # measure metrics and record loss
         m1 = metric1(imoutput.data, target)
@@ -317,16 +334,15 @@ def validate(val_loader, model, criterion, epoch=0):
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                   'Metric1 {avg_m1.val:.3f} ({avg_m1.avg:.3f})\t'
                   'Metric2 {avg_m2.val:.3f} ({avg_m2.avg:.3f})'.format(
-                      i,
-                      len(val_loader),
-                      batch_time=batch_time,
-                      loss=losses,
-                      avg_m1=avg_m1,
-                      avg_m2=avg_m2))
+                i,
+                len(val_loader),
+                batch_time=batch_time,
+                loss=losses,
+                avg_m1=avg_m1,
+                avg_m2=avg_m2))
 
         # TODO (Q1.3): Visualize things as mentioned in handout
         # TODO (Q1.3): Visualize at appropriate intervals
-
 
     print(' * Metric1 {avg_m1.avg:.3f} Metric2 {avg_m2.avg:.3f}'.format(
         avg_m1=avg_m1, avg_m2=avg_m2))

@@ -161,7 +161,7 @@ class VOCDataset(Dataset):
             4. You may have to write a custom collate_fn since some of the attributes below may be variable in number for each data point
         """
         proposals = []
-        top_n = 10
+        top_n = self.top_n
         # proposals = self.roi_data
         # boxScores = self.roi_data["boxScores"].flatten()
         # for i, score in enumerate(boxScores):
