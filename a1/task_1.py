@@ -26,8 +26,6 @@ from utils import *
 from torch.optim.lr_scheduler import StepLR
 
 USE_WANDB = False  # use flags, wandb is not convenient for debugging
-if (USE_WANDB):
-    wandb.init(project="vlr-hw1")
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
                      and callable(models.__dict__[name]))
@@ -43,7 +41,7 @@ parser.add_argument(
     help='number of data loading workers (default: 4)')
 parser.add_argument(
     '--epochs',
-    default=2, #30
+    default=2,  # 30
     type=int,
     metavar='N',
     help='number of total epochs to run')
@@ -196,19 +194,21 @@ def main():
         drop_last=True)
 
     if args.evaluate:
-        validate(val_loader, model, criterion)
+        validate(val_loader, model, criterion, wandb=wandb)
         return
 
     # TODO (Q1.3): Create loggers for wandb.
     # Ideally, use flags since wandb makes it harder to debug code.
+    if (USE_WANDB):
+        wandb.init(project="vlr-hw1")
 
     for epoch in range(args.start_epoch, args.epochs):
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch)
+        train(train_loader, model, criterion, optimizer, epoch, wandb)
 
         # evaluate on validation set
         if epoch % args.eval_freq == 0 or epoch == args.epochs - 1:
-            m1, m2 = validate(val_loader, model, criterion, epoch)
+            m1, m2 = validate(val_loader, model, criterion, epoch, wandb)
 
             score = m1 * m2
             # remember best prec@1 and save checkpoint
@@ -224,7 +224,7 @@ def main():
 
 
 # TODO: You can add input arguments if you wish
-def train(train_loader, model, criterion, optimizer, epoch):
+def train(train_loader, model, criterion, optimizer, epoch, wandb):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -286,11 +286,13 @@ def train(train_loader, model, criterion, optimizer, epoch):
                 avg_m2=avg_m2))
 
         # TODO (Q1.3): Visualize/log things as mentioned in handout at appropriate intervals
-
+        wandb.log({"train/epoch": epoch,
+                   "train/iteration": i,
+                   "train/loss": loss})
         # End of train()
 
 
-def validate(val_loader, model, criterion, epoch=0):
+def validate(val_loader, model, criterion, epoch=0, wandb=None):
     batch_time = AverageMeter()
     losses = AverageMeter()
     avg_m1 = AverageMeter()
