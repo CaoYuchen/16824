@@ -43,7 +43,7 @@ parser.add_argument(
     help='number of data loading workers (default: 4)')
 parser.add_argument(
     '--epochs',
-    default=30,
+    default=2, #30
     type=int,
     metavar='N',
     help='number of total epochs to run')
@@ -63,7 +63,7 @@ parser.add_argument(
 parser.add_argument(
     '--lr',
     '--learning-rate',
-    default=0.1,
+    default=0.01,
     type=float,
     metavar='LR',
     help='initial learning rate')
