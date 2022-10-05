@@ -7,7 +7,7 @@ import sklearn
 import sklearn.metrics
 from sklearn.metrics import fbeta_score
 from sklearn.metrics import average_precision_score
-from sklearn.metrics import f1_score
+from sklearn.metrics import recall_score
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -260,6 +260,7 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb):
         # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
         maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
         output = maxPool(imoutput).flatten(start_dim=1)
+        output = F.sigmoid(output)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
 
@@ -336,6 +337,7 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None):
         # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
         maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
         output = maxPool(imoutput).flatten(start_dim=1)
+        output = F.sigmoid(output)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
 
@@ -417,20 +419,21 @@ def metric1(output, target, threshold=0.5):
     return mAP
 
 
-def metric2(output, target, threshold = 0.5):
+def metric2(output, target, threshold=0.5):
     # TODO (Q1.5): compute metric2
     n_class = target.shape[1]
     sum_recall = []
     for i in range(n_class):
         gt_class = target[:, i].cpu().numpy().astype('float32')
         pred_class = output[:, i].cpu().numpy().astype('float32')
+        pred_class = (pred_class > .5).astype(int)
         if np.count_nonzero(gt_class) == 0:
             if np.count_nonzero(pred_class > threshold) == 0:
                 recall = 1
             else:
                 recall = 0
         else:
-            recall = fbeta_score(gt_class, pred_class)
+            recall = recall_score(gt_class, pred_class, average="macro")
         sum_recall.append(recall)
     mRecall = np.mean(sum_recall)
     return mRecall
