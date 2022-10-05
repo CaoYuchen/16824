@@ -5,6 +5,9 @@ import time
 
 import sklearn
 import sklearn.metrics
+from sklearn.metrics import fbeta_score
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import f1_score
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -23,6 +26,7 @@ import wandb
 import matplotlib.pyplot as plt
 from PIL import Image
 from matplotlib import cm
+import numpy as np
 
 from AlexNet import localizer_alexnet, localizer_alexnet_robust
 from voc_dataset import *
@@ -260,8 +264,8 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb):
         loss = criterion(output, target)
 
         # measure metrics and record loss
-        m1 = metric1(imoutput.data, target)
-        m2 = metric2(imoutput.data, target)
+        m1 = metric1(output.data, target)
+        m2 = metric2(output.data, target)
         losses.update(loss.item(), input.size(0))
         avg_m1.update(m1)
         avg_m2.update(m2)
@@ -336,8 +340,8 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None):
         loss = criterion(output, target)
 
         # measure metrics and record loss
-        m1 = metric1(imoutput.data, target)
-        m2 = metric2(imoutput.data, target)
+        m1 = metric1(output.data, target)
+        m2 = metric2(output.data, target)
         losses.update(loss.item(), input.size(0))
         avg_m1.update(m1)
         avg_m2.update(m2)
@@ -394,16 +398,42 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def metric1(output, target):
+def metric1(output, target, threshold=0.5):
     # TODO (Q1.5): compute metric1
+    n_class = target.shape[1]
+    sum_ap = []
+    for i in range(n_class):
+        gt_class = target[:, i].cpu().numpy().astype('float32')
+        pred_class = output[:, i].cpu().numpy().astype('float32')
+        if np.count_nonzero(gt_class) == 0:
+            if np.count_nonzero(pred_class > threshold) == 0:
+                ap = 1
+            else:
+                ap = 0
+        else:
+            ap = average_precision_score(gt_class, pred_class)
+        sum_ap.append(ap)
+    mAP = np.mean(sum_ap)
+    return mAP
 
-    return [0]
 
-
-def metric2(output, target):
+def metric2(output, target, threshold = 0.5):
     # TODO (Q1.5): compute metric2
-
-    return [0]
+    n_class = target.shape[1]
+    sum_recall = []
+    for i in range(n_class):
+        gt_class = target[:, i].cpu().numpy().astype('float32')
+        pred_class = output[:, i].cpu().numpy().astype('float32')
+        if np.count_nonzero(gt_class) == 0:
+            if np.count_nonzero(pred_class > threshold) == 0:
+                recall = 1
+            else:
+                recall = 0
+        else:
+            recall = fbeta_score(gt_class, pred_class)
+        sum_recall.append(recall)
+    mRecall = np.mean(sum_recall)
+    return mRecall
 
 
 if __name__ == '__main__':

@@ -121,5 +121,5 @@ def localizer_alexnet_robust(pretrained=False, **kwargs):
                 nn.init.xavier_uniform_(layer.weight)
                 # nn.init.xavier_uniform_(layer.bias)
                 torch.nn.init.zeros_(layer.bias)
-                
+
     return model
