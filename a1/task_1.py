@@ -296,9 +296,8 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb):
                 avg_m2=avg_m2))
 
         # TODO (Q1.3): Visualize/log things as mentioned in handout at appropriate intervals
-        sigmoid = nn.Sigmoid()
         indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
-        heatmap = sigmoid(
+        heatmap = F.sigmoid(
             F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
                           mode='bilinear', align_corners=True))
         heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
@@ -367,6 +366,19 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None):
 
         # TODO (Q1.3): Visualize things as mentioned in handout
         # TODO (Q1.3): Visualize at appropriate intervals
+        indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
+        heatmap = F.sigmoid(
+            F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
+                          mode='bilinear', align_corners=True))
+        heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
+        # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
+        # heatmap = tensor_to_PIL(heatmap[0])
+        if (USE_WANDB):
+            wandb.log({"train/epoch": epoch,
+                       "train/iteration": i,
+                       "train/loss": loss,
+                       "train/image": wandb.Image(input),
+                       "train/heatmap": wandb.Image(heatmap)})
 
     print(' * Metric1 {avg_m1.avg:.3f} Metric2 {avg_m2.avg:.3f}'.format(
         avg_m1=avg_m1, avg_m2=avg_m2))
