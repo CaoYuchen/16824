@@ -45,10 +45,33 @@ class LocalizerAlexNetRobust(nn.Module):
     def __init__(self, num_classes=20):
         super(LocalizerAlexNetRobust, self).__init__()
         # TODO (Q1.7): Define model
-
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
+            nn.ReLU(inplace=False),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(64, 192, kernel_size=5, padding=2),
+            nn.ReLU(inplace=False),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=False),
+            # nn.MaxPool2d(kernel_size=3, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=3, stride=1),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(256, 256, kernel_size=1, stride=1),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(256, 20, kernel_size=1, stride=1),
+            nn.Dropout2d(p=0.3, inplace=False),
+        )
     def forward(self, x):
         # TODO (Q1.7): Define forward pass
-
+        x = self.features(x)
+        x = self.classifier(x)*0.7
         return x
 
 
@@ -86,5 +109,17 @@ def localizer_alexnet_robust(pretrained=False, **kwargs):
     """
     model = LocalizerAlexNetRobust(**kwargs)
     # TODO (Q1.7): Initialize weights based on whether it is pretrained or not
-
+    if(pretrained):
+        torch.hub.set_dir("E:\\16824\\a1\\.cache")
+        AlexNet = models.alexnet(pretrained=True)
+        for i, layer in enumerate(model.features):
+            if type(layer) == nn.Conv2d:
+                layer.weight = AlexNet.features[i].weight
+                layer.bias = AlexNet.features[i].bias
+        for i, layer in enumerate(model.classifier):
+            if type(layer) == nn.Conv2d:
+                nn.init.xavier_uniform_(layer.weight)
+                # nn.init.xavier_uniform_(layer.bias)
+                torch.nn.init.zeros_(layer.bias)
+                
     return model
