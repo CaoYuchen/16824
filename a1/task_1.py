@@ -14,10 +14,15 @@ import torch.distributed as dist
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
+import torchvision.transforms
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 import wandb
+
+import matplotlib.pyplot as plt
+from PIL import Image
+from matplotlib import cm
 
 from AlexNet import localizer_alexnet, localizer_alexnet_robust
 from voc_dataset import *
@@ -255,11 +260,11 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb):
         loss = criterion(output, target)
 
         # measure metrics and record loss
-        m1 = metric1(imoutput.data, target)
-        m2 = metric2(imoutput.data, target)
-        losses.update(loss.item(), input.size(0))
-        avg_m1.update(m1)
-        avg_m2.update(m2)
+        # m1 = metric1(imoutput.data, target)
+        # m2 = metric2(imoutput.data, target)
+        # losses.update(loss.item(), input.size(0))
+        # avg_m1.update(m1)
+        # avg_m2.update(m2)
 
         # TODO (Q1.1): compute gradient and perform optimizer step
         optimizer.zero_grad()
@@ -286,9 +291,20 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb):
                 avg_m2=avg_m2))
 
         # TODO (Q1.3): Visualize/log things as mentioned in handout at appropriate intervals
-        wandb.log({"train/epoch": epoch,
-                   "train/iteration": i,
-                   "train/loss": loss})
+        sigmoid = nn.Sigmoid()
+        indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
+        heatmap = sigmoid(
+            F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
+                          mode='bilinear', align_corners=True))
+        heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
+        # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
+        # heatmap = tensor_to_PIL(heatmap[0])
+        if (USE_WANDB):
+            wandb.log({"train/epoch": epoch,
+                       "train/iteration": i,
+                       "train/loss": loss,
+                       "train/image": wandb.Image(input),
+                       "train/heatmap": wandb.Image(heatmap)})
         # End of train()
 
 
