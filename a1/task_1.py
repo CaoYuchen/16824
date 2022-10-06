@@ -192,7 +192,8 @@ def main():
         num_workers=args.workers,
         pin_memory=True,
         sampler=train_sampler,
-        drop_last=True)
+        drop_last=True,
+        collate_fn=VOCDataset.custom_collate)
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset,

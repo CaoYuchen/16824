@@ -12,6 +12,8 @@ import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
+from torch.nn.utils.rnn import pad_sequence
+
 
 class VOCDataset(Dataset):
     CLASS_NAMES = [
@@ -26,17 +28,17 @@ class VOCDataset(Dataset):
 
     # TODO: Ensure data directory is correct
     def __init__(
-        self,
-        split='trainval',
-        image_size=224,
-        top_n=300,
-        data_dir='data/train/VOCdevkit/VOC2007/'
+            self,
+            split='trainval',
+            image_size=224,
+            top_n=300,
+            data_dir='data/train/VOCdevkit/VOC2007/'
     ):
         super().__init__()
-        self.split = split     # 'trainval' or 'test'
+        self.split = split  # 'trainval' or 'test'
         self.data_dir = data_dir
         self.size = image_size
-        self.top_n = top_n      # top_n: number of proposals to return
+        self.top_n = top_n  # top_n: number of proposals to return
 
         self.img_dir = os.path.join(data_dir, 'JPEGImages')
         self.ann_dir = os.path.join(data_dir, 'Annotations')
@@ -86,7 +88,7 @@ class VOCDataset(Dataset):
             root = tree.getroot()
 
             C = np.zeros(20)
-            W = np.ones(20) * 2 # default to enable 1 or 0 later for difficulty
+            W = np.ones(20) * 2  # default to enable 1 or 0 later for difficulty
 
             # image h & w to normalize bbox coords
             height = 0
@@ -103,10 +105,10 @@ class VOCDataset(Dataset):
                     height = int(child[1].text)
 
                 if child.tag == 'object':
-                    C[self.INV_CLASS[child[0].text]] = 1    # item at index of child name become 1
+                    C[self.INV_CLASS[child[0].text]] = 1  # item at index of child name become 1
                     if child[3].text == '1' and W[self.INV_CLASS[child[0].text]] == 2:
-                        W[self.INV_CLASS[child[0].text]] = 0    # if not difficult, weight is one
-                    elif child[3].text == '0' :
+                        W[self.INV_CLASS[child[0].text]] = 0  # if not difficult, weight is one
+                    elif child[3].text == '0':
                         W[self.INV_CLASS[child[0].text]] = 1
 
                     # add class_index to gt_class_list
@@ -134,7 +136,7 @@ class VOCDataset(Dataset):
         :return: index-th element - containing all the aforementioned information
         """
 
-        findex = self.index_list[index]     # findex refers to the file number
+        findex = self.index_list[index]  # findex refers to the file number
         fpath = os.path.join(self.img_dir, findex + '.jpg')
 
         img = Image.open(fpath)
@@ -175,13 +177,33 @@ class VOCDataset(Dataset):
         indices = (-boxScores).flatten().argsort()[:top_n]
         for i in indices:
             bbox = self.roi_data["boxes"].flatten()[index][i]
-            proposals.append([bbox[0]/width, bbox[1]/height, bbox[2]/width, bbox[3]/height])
+            proposals.append([bbox[0] / width, bbox[1] / height, bbox[2] / width, bbox[3] / height])
+        rois = torch.tensor(proposals)
 
         ret = {}
         ret['image'] = img
         ret['label'] = label
         ret['wgt'] = wgt
-        ret['rois'] = proposals
+        ret['rois'] = rois
         ret['gt_boxes'] = gt_boxes
         ret['gt_classes'] = gt_class_list
         return ret
+
+    @classmethod
+    def custom_collate(self, data):
+        image = torch.stack([d['image'] for d in data])
+        label = torch.stack([d['label'] for d in data])
+        wgt = torch.stack([d['wgt'] for d in data])
+        rois = torch.stack([d['rois'] for d in data])
+        gt_classes = [torch.tensor(d['gt_boxes']) for d in data]
+        gt_boxes = [torch.tensor(d['gt_classes']) for d in data]
+        gt_classes = pad_sequence(gt_classes, batch_first=True)
+        gt_boxes = pad_sequence(gt_boxes, batch_first=True)
+        return {
+            'image': image,
+            'label': label,
+            'wgt': wgt,
+            'rois': rois,
+            'gt_classes': gt_classes,
+            'gt_boxes': gt_boxes
+        }
