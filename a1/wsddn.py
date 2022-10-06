@@ -67,8 +67,8 @@ class WSDDN(nn.Module):
         # TODO (Q2.1): Use image and rois as input
         # compute cls_prob which are N_roi X 20 scores
         features = self.features(image)
-        pooled_features = self.roi_pool(input=features, boxes=rois, output_size=(6, 6), spatial_scale=1.0 / 16)
-        x = pooled_features.view(pooled_features.size()[0], -1)
+        pooled_features = self.roi_pool(input=features, boxes=rois, output_size=(6, 6), spatial_scale=1.0 / 16 * image.size(2))
+        x = pooled_features.view(pooled_features.size(0), -1)
         x = self.classifier(x)
         # shape of x should be num_roi x 4096
         cls_score = self.score_cls(x)
