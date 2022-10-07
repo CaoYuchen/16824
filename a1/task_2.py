@@ -228,7 +228,8 @@ def main():
         shuffle=False,
         num_workers=args.workers,
         pin_memory=True,
-        drop_last=True)
+        drop_last=True,
+        collate_fn=VOCDataset.custom_collate)
     # Create network and initialize
     net = WSDDN(classes=train_dataset.CLASS_NAMES)
     print(net)

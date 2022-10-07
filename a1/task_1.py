@@ -201,7 +201,8 @@ def main():
         shuffle=False,
         num_workers=args.workers,
         pin_memory=True,
-        drop_last=True)
+        drop_last=True,
+        collate_fn=VOCDataset.custom_collate)
 
     if args.evaluate:
         validate(val_loader, model, criterion, wandb=wandb)
