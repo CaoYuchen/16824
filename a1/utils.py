@@ -20,6 +20,13 @@ def nms(bounding_boxes, confidence_score, threshold=0.05):
     return: list of bounding boxes and scores
     """
     boxes, scores = None, None
+    x1 = bounding_boxes[:, 0]
+    y1 = bounding_boxes[:, 1]
+    x2 = bounding_boxes[:, 2]
+    y2 = bounding_boxes[:, 3]
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = (-confidence_score).argsort()
+    max_area = order[0]
 
     return boxes, scores
 
@@ -30,6 +37,15 @@ def iou(box1, box2):
     Calculates Intersection over Union for two bounding boxes (xmin, ymin, xmax, ymax)
     returns IoU vallue
     """
+    xx1 = np.maximum(x1[i], x1[order[1:]])
+    yy1 = np.maximum(y1[i], y1[order[1:]])
+    xx2 = np.minimum(x2[i], x2[order[1:]])
+    yy2 = np.minimum(y2[i], y2[order[1:]])
+
+    w = np.maximum(0.0, xx2 - xx1 + 1)
+    h = np.maximum(0.0, yy2 - yy1 + 1)
+    inter = w * h
+    ovr = inter / (areas[i] + areas[order[1:]] - inter)
 
     return iou
 
@@ -40,8 +56,8 @@ def tensor_to_PIL(image):
     will not work with batches (if batch size is 1, squeeze before using this)
     """
     inv_normalize = transforms.Normalize(
-        mean=[-0.485/0.229, -0.456/0.224, -0.406/0.255],
-        std=[1/0.229, 1/0.224, 1/0.255],
+        mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255],
+        std=[1 / 0.229, 1 / 0.224, 1 / 0.255],
     )
 
     inv_tensor = inv_normalize(image)
@@ -59,14 +75,14 @@ def get_box_data(classes, bbox_coordinates):
     return list of boxes as expected by the wandb bbox plotter
     """
     box_list = [{
-            "position": {
-                "minX": bbox_coordinates[i][0],
-                "minY": bbox_coordinates[i][1],
-                "maxX": bbox_coordinates[i][2],
-                "maxY": bbox_coordinates[i][3],
-            },
-            "class_id": classes[i],
-        } for i in range(len(classes))
-        ]
+        "position": {
+            "minX": bbox_coordinates[i][0],
+            "minY": bbox_coordinates[i][1],
+            "maxX": bbox_coordinates[i][2],
+            "maxY": bbox_coordinates[i][3],
+        },
+        "class_id": classes[i],
+    } for i in range(len(classes))
+    ]
 
     return box_list

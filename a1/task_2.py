@@ -129,15 +129,17 @@ def test_model(model, val_loader=None, thresh=0.05):
             gt_class_list = data['gt_classes'].cuda()
 
             # TODO (Q2.3): perform forward pass, compute cls_probs
-            cls_probs =model(image, rois, target)
+            cls_probs = model(image, rois, target)
             cls_probs = cls_probs.data.cpu().numpy()
-            roi = roi.data.cpu().numpy()
+            rois = rois.data.cpu().numpy()
             # TODO (Q2.3): Iterate over each class (follow comments)
             for class_num in range(20):
                 # get valid rois and cls_scores based on thresh
-                index = np.where(cls_probs[:,class_num]>thresh)
+                index = np.where(cls_probs[:, class_num] > thresh)[0]
+                scores = cls_probs[index, class_num]
+                boxes = rois[index, class_num]
                 # use NMS to get boxes and scores
-                pass
+                boxes_nms, scores_nms = nms(boxes, scores)
 
             # TODO (Q2.3): visualize bounding box predictions when required
             calculate_map()
