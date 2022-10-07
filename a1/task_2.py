@@ -112,7 +112,7 @@ def calculate_map():
     pass
 
 
-def test_model(model, val_loader=None, thresh=0.05):
+def test_model(model, val_loader=None, thresh=0.0002): #0.05
     """
     Tests the networks and visualizes the detections
     :param thresh: Confidence threshold
@@ -137,7 +137,7 @@ def test_model(model, val_loader=None, thresh=0.05):
                 # get valid rois and cls_scores based on thresh
                 index = np.where(cls_probs[:, class_num] > thresh)[0]
                 scores = cls_probs[index, class_num]
-                boxes = rois[index, class_num]
+                boxes = rois[0, index]
                 # use NMS to get boxes and scores
                 boxes_nms, scores_nms = nms(boxes, scores)
 

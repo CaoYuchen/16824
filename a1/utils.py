@@ -19,14 +19,31 @@ def nms(bounding_boxes, confidence_score, threshold=0.05):
 
     return: list of bounding boxes and scores
     """
-    boxes, scores = None, None
+    boxes, scores = [], []
     x1 = bounding_boxes[:, 0]
     y1 = bounding_boxes[:, 1]
     x2 = bounding_boxes[:, 2]
     y2 = bounding_boxes[:, 3]
-    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    areas = (x2 - x1) * (y2 - y1)
     order = (-confidence_score).argsort()
-    max_area = order[0]
+
+    while order.size > 0:
+        i = order[0]
+        boxes.append(bounding_boxes[i])
+        scores.append(confidence_score[i])
+
+        xx1 = np.maximum(x1[i], x1[order[1:]])
+        yy1 = np.maximum(y1[i], y1[order[1:]])
+        xx2 = np.minimum(x2[i], x2[order[1:]])
+        yy2 = np.minimum(y2[i], y2[order[1:]])
+
+        w = np.maximum(0.0, xx2 - xx1)
+        h = np.maximum(0.0, yy2 - yy1)
+        inter = w * h
+        ovr = inter / (areas[i] + areas[order[1:]] - inter)
+
+        inds = np.where(ovr <= threshold)[0]
+        order = order[inds]
 
     return boxes, scores
 
@@ -37,15 +54,7 @@ def iou(box1, box2):
     Calculates Intersection over Union for two bounding boxes (xmin, ymin, xmax, ymax)
     returns IoU vallue
     """
-    xx1 = np.maximum(x1[i], x1[order[1:]])
-    yy1 = np.maximum(y1[i], y1[order[1:]])
-    xx2 = np.minimum(x2[i], x2[order[1:]])
-    yy2 = np.minimum(y2[i], y2[order[1:]])
-
-    w = np.maximum(0.0, xx2 - xx1 + 1)
-    h = np.maximum(0.0, yy2 - yy1 + 1)
-    inter = w * h
-    ovr = inter / (areas[i] + areas[order[1:]] - inter)
+    iou = None
 
     return iou
 
