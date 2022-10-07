@@ -15,8 +15,10 @@ import pickle as pkl
 from wsddn import WSDDN
 from voc_dataset import *
 import wandb
-from utils import nms, tensor_to_PIL
+from utils import nms, iou, tensor_to_PIL
 from PIL import Image, ImageDraw
+
+from sklearn.metrics import auc
 
 # hyper-parameters
 # ------------
@@ -103,16 +105,43 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 
-def calculate_map():
+def calculate_map(gt_boxes, gt_class_list, pred_boxes, pred_scores, iou_thresh=0.3):
     """
     Calculate the mAP for classification.
     """
     # TODO (Q2.3): Calculate mAP on test set.
     # Feel free to write necessary function parameters.
-    pass
+    precisions = []
+    recalls = []
+
+    FP = 0
+    TP = 0
+    gt_class_used = np.zeros_like(gt_class_list)
+    for class_num in range(20):
+        # check if gt_class_list contains the class_num, otherwise FP++
+        if class_num not in gt_class_list:
+            FP += 1
+        else:
+            # iterate through gt_class_list and compare IOU with nms_box to decide TP and FP
+            for i, gt_class in enumerate(gt_class_list):
+                if gt_class_used[i] == 1:
+                    continue
+                gt_box = gt_boxes[gt_class]
+                for pred_box in pred_boxes:
+                    if iou(gt_box, pred_box) >= iou_thresh:
+                        TP += 1
+                        gt_class_used[i] = 1
+                    else:
+                        FP += 1
+
+    precisions.append(TP / (TP + FP))
+    recalls.append(TP / gt_class_list.shape[0])
+
+    mAP = auc(precisions, recalls)
+    return mAP
 
 
-def test_model(model, val_loader=None, thresh=0.0002): #0.05
+def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
     """
     Tests the networks and visualizes the detections
     :param thresh: Confidence threshold
@@ -123,26 +152,37 @@ def test_model(model, val_loader=None, thresh=0.0002): #0.05
             # one batch = data for one image
             image = data['image'].cuda()
             target = data['label'].cuda()
-            wgt = data['wgt'].cuda()
+            # wgt = data['wgt'].cuda()
             rois = data['rois'].cuda()
-            gt_boxes = data['gt_boxes'].cuda()
-            gt_class_list = data['gt_classes'].cuda()
+            gt_boxes = data['gt_boxes'].squeeze().numpy()
+            gt_class_list = data['gt_classes'].squeeze().numpy()
 
             # TODO (Q2.3): perform forward pass, compute cls_probs
             cls_probs = model(image, rois, target)
             cls_probs = cls_probs.data.cpu().numpy()
             rois = rois.data.cpu().numpy()
             # TODO (Q2.3): Iterate over each class (follow comments)
+            pred_boxes = []
+            pred_scores = []
+            # gt_boxes_list = []
+            iou_thresh = 0.3
             for class_num in range(20):
                 # get valid rois and cls_scores based on thresh
                 index = np.where(cls_probs[:, class_num] > thresh)[0]
                 scores = cls_probs[index, class_num]
                 boxes = rois[0, index]
                 # use NMS to get boxes and scores
-                boxes_nms, scores_nms = nms(boxes, scores)
+                nms_boxes, nms_scores = nms(boxes, scores, threshold=iou_thresh)
+                pred_boxes.append(nms_boxes)
+                pred_scores.append(nms_scores)
+                # if class_num in gt_class_list:
+                #     i = np.where(gt_class_list == class_num)[0]
+                #     gt_boxes_list.append(gt_boxes[i])
+                # else:
+                #     gt_boxes_list.append(None)
 
-            # TODO (Q2.3): visualize bounding box predictions when required
-            calculate_map()
+        # TODO (Q2.3): visualize bounding box predictions when required
+        mAP = calculate_map(gt_boxes, gt_class_list, pred_boxes, pred_scores, iou_thresh=iou_thresh)
 
 
 def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=None):
@@ -159,17 +199,14 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
             # one batch = data for one image
             image = data['image'].cuda()
             target = data['label'].cuda()
-            wgt = data['wgt'].cuda()
+            # wgt = data['wgt'].cuda()
             rois = data['rois'].cuda()
-            gt_boxes = data['gt_boxes'].cuda()
-            gt_class_list = data['gt_classes'].cuda()
+            # gt_boxes = data['gt_boxes'].squeeze().numpy()
+            # gt_class_list = data['gt_classes'].squeeze().numpy()
 
             # TODO (Q2.2): perform forward pass
             # take care that proposal values should be in pixels
             # Convert inputs to cuda if training on GPU
-            # rois_5d = []
-            # for i in range(rois.shape[0]):
-            #     rois_5d.append(rois[i])
 
             model(image, rois, target)
 

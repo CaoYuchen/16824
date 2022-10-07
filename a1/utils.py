@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 
 
 # TODO: given bounding boxes and corresponding scores, perform non max suppression
-def nms(bounding_boxes, confidence_score, threshold=0.05):
+def nms(bounding_boxes, confidence_score, threshold=0.0002):
     """
     bounding boxes of shape     Nx4
     confidence scores of shape  N
