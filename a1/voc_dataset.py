@@ -178,7 +178,7 @@ class VOCDataset(Dataset):
         for i in indices:
             bbox = self.roi_data["boxes"].flatten()[index][i]
             proposals.append([bbox[0] / width, bbox[1] / height, bbox[2] / width, bbox[3] / height])
-        rois = torch.tensor(proposals)
+        rois = torch.FloatTensor(proposals)
 
         ret = {}
         ret['image'] = img

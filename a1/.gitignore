@@ -5,3 +5,4 @@
 /wandb
 /__pychche__
 /.cache
+*.pkl
