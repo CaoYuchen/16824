@@ -137,7 +137,7 @@ def calculate_map(gt_boxes, gt_class_list, pred_boxes, pred_scores, iou_thresh=0
     precisions.append(TP / (TP + FP))
     recalls.append(TP / gt_class_list.shape[0])
 
-    mAP = auc(precisions, recalls)
+    mAP = auc(recalls,precisions)
     return mAP
 
 
