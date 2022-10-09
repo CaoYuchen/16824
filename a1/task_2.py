@@ -146,6 +146,12 @@ def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
     Tests the networks and visualizes the detections
     :param thresh: Confidence threshold
     """
+    all_bboxes = []
+    all_scores = []
+    all_classes = []
+    all_gt_boxes = []
+    all_gt_classes = []
+
     with torch.no_grad():
         for iter, data in enumerate(val_loader):
 
@@ -162,6 +168,9 @@ def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
             cls_probs = cls_probs.data.cpu().numpy()
             rois = rois.data.cpu().numpy()
             # TODO (Q2.3): Iterate over each class (follow comments)
+            all_gt_boxes.append(gt_boxes)
+            all_gt_classes.append(gt_class_list)
+            
             pred_boxes = []
             pred_scores = []
             # gt_boxes_list = []
