@@ -68,9 +68,9 @@ class WSDDN(nn.Module):
         # TODO (Q2.1): Use image and rois as input
         # compute cls_prob which are N_roi X 20 scores
         features = self.features(image)
-        rois_5d = torch.hstack((rois.squeeze(), torch.zeros((rois.size(1), 1), device=torch.device('cuda')))).cuda()
+        rois_5d = torch.hstack((torch.zeros((rois.size(1), 1), device=torch.device('cuda')), rois.squeeze())).cuda()
         pooled_features = self.roi_pool(input=features, boxes=rois_5d, output_size=(6, 6),
-                                        spatial_scale=1.0 / 16 * image.size(2))
+                                        spatial_scale=features.size(2) / image.size(2))
         x = pooled_features.view(pooled_features.size(0), -1)
         x = self.classifier(x)
         # shape of x should be num_roi x 4096
