@@ -54,7 +54,24 @@ def iou(box1, box2):
     Calculates Intersection over Union for two bounding boxes (xmin, ymin, xmax, ymax)
     returns IoU vallue
     """
-    iou = None
+    area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
+
+    intersection_box = [max(box1[0], box2[0]),
+                        max(box1[1], box2[1]),
+                        min(box1[2], box2[2]),
+                        min(box1[3], box2[3])]
+
+    intersection = (intersection_box[2] - intersection_box[0]) * \
+        (intersection_box[3] - intersection_box[1])
+
+    if intersection_box[0] > intersection_box[2] or \
+        intersection_box[1] > intersection_box[3]:
+        intersection = 0
+
+    union = area1 + area2 - intersection
+
+    iou = intersection / union
 
     return iou
 
