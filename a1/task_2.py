@@ -105,48 +105,74 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 
-def calculate_map(all_bboxes, all_scores, all_classes, all_batches, all_gt_boxes, all_gt_classes, iou_thresh=0.3, n_classes=20):
+def calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_classes, iou_thresh=0.3, n_classes=20,
+                  eps=1e-5):
     """
     Calculate the mAP for classification.
     """
     # TODO (Q2.3): Calculate mAP on test set.
     # Feel free to write necessary function parameters.
-    # The list size is N x Array(WxH or S)
-    # N is number of batches multiple by number of classes
-    # W x H is for box size, S is for classes index and scores size and batches index
+    ## For all_bboxes, all_scores, all_batches
+    # The list size is C x N x Array(WxH or S)
+    # N is number of batches multiply by number of predicted bboxes, C is the number of classes
+    # W x H is for box size, S is for and scores size and batches index
+
+    ## For all_gt_boxes, all_gt_classes
+    # The list is N x M x Array(WxH or S)
+    # N is number of batches, M is the number of bboxes for each batch
+    # W x H is for box size, S is for and scores size and batches index
+
     aps = []
+    # per class
+    for n_class in range(n_classes):
+        tp = 0
+        fp = 0
+        precisions = []
+        recalls = []
+        gts_count = all_gt_classes[n_class].size(0)
 
-    for i in range(len(all_bboxes)):
-        order =
+        orders = np.asarray(-all_scores[n_classes]).argsort()
+        visited = np.zeros_like(all_gt_classes[n_class])
+        visited_count = 0
+        # per predicted bbox
+        for order in orders:
+            if visited_count == visited.size(0):
+                fp += 1
+                precisions.append(tp / (tp + fp + eps))
+                recalls.append(tp / (gts_count + eps))
+                continue
 
-    precisions = []
-    recalls = []
+            bbox = all_bboxes[n_class][order]
+            batch = all_batches[n_class][order]
+            gt_boxes = all_gt_boxes[batch]
+            gt_classes = all_gt_classes[batch]
 
-    FP = 0
-    TP = 0
-    gt_class_used = np.zeros_like(gt_class_list)
-    for class_num in range(20):
-        # check if gt_class_list contains the class_num, otherwise FP++
-        if class_num not in gt_class_list:
-            FP += 1
-        else:
-            # iterate through gt_class_list and compare IOU with nms_box to decide TP and FP
-            for i, gt_class in enumerate(gt_class_list):
-                if gt_class_used[i] == 1:
-                    continue
-                gt_box = gt_boxes[gt_class]
-                for pred_box in pred_boxes:
-                    if iou(gt_box, pred_box) >= iou_thresh:
-                        TP += 1
-                        gt_class_used[i] = 1
+            if n_class not in gt_classes:
+                fp += 1
+                precisions.append(tp / (tp + fp + eps))
+                recalls.append(tp / (gts_count + eps))
+            else:
+                indices = np.where(gt_classes == n_class)[0]
+                for i in indices:
+                    if visited[i]:
+                        continue
                     else:
-                        FP += 1
+                        iou_score = iou(bbox, gt_boxes[i])
+                        if iou_score >= iou_thresh:
+                            tp += 1
+                            visited[i] = 1
+                            visited_count +=1
+                        else:
+                            fp += 1
+                        precisions.append(tp / (tp + fp + eps))
+                        recalls.append(tp / (gts_count + eps))
 
-    precisions.append(TP / (TP + FP))
-    recalls.append(TP / gt_class_list.shape[0])
+        # Calculating auc.
+        ap = auc(np.asarray(recalls), np.asarray(precisions))
+        aps.append(ap)
 
-    mAP = auc(recalls, precisions)
-    return mAP
+    m_ap = np.mean(aps)
+    return m_ap
 
 
 def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
@@ -154,13 +180,15 @@ def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
     Tests the networks and visualizes the detections
     :param thresh: Confidence threshold
     """
-    # The list size is N x Array(WxH or S)
-    # N is number of batches multiple by number of classes
-    # W x H is for box size, S is for classes index and scores size and batches index
-    all_bboxes = []
-    all_scores = []
-    all_classes = []
-    all_batches = []
+    # The list size is C x N x Array(WxH or S)
+    # N is number of batches multiply by number of predicted bboxes, C is the number of classes
+    # W x H is for box size, S is for and scores size and batches index
+    all_bboxes = [[]] * 20
+    all_scores = [[]] * 20
+    all_batches = [[]] * 20
+    # The list is N x M x Array(WxH or S)
+    # N is number of batches, M is the number of bboxes for each batch
+    # W x H is for box size, S is for and scores size and batches index
     all_gt_boxes = []
     all_gt_classes = []
 
@@ -200,17 +228,17 @@ def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
                 # pred_boxes.append(nms_boxes)
                 # pred_scores.append(nms_scores)
                 # pred_index.append(np.ones_like(nms_scores) * class_num)
-                all_bboxes.extend(nms_boxes)
-                all_scores.extend(nms_scores)
-                all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
-                all_batches.extend((np.ones_like(nms_scores) * iter).tolist())
+                all_bboxes[class_num].extend(nms_boxes)
+                all_scores[class_num].extend(nms_scores)
+                # all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
+                all_batches[class_num].extend((np.ones_like(nms_scores) * iter).tolist())
             pass
             # all_bboxes.append(pred_boxes)
             # all_scores.append(pred_scores)
             # all_classes.append(pred_index)
 
         # TODO (Q2.3): visualize bounding box predictions when required
-        AP = calculate_map(all_bboxes, all_scores, all_classes, all_batches, all_gt_boxes, all_gt_classes, iou_thresh=iou_thresh)
+        AP = calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_classes, iou_thresh=iou_thresh)
 
     return AP
 
