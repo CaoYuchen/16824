@@ -126,6 +126,7 @@ parser.add_argument(
 parser.add_argument(
     '--dist-backend', default='gloo', type=str, help='distributed backend')
 parser.add_argument('--vis', action='store_true')
+parser.add_argument('--avg-pool', default=True, type=bool, help="Use avg_pool instead of max_pool")
 
 best_prec1 = 0
 
@@ -215,11 +216,11 @@ def main():
 
     for epoch in range(args.start_epoch, args.epochs):
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, wandb)
+        train(train_loader, model, criterion, optimizer, epoch, wandb, args.avg_pool)
 
         # evaluate on validation set
         if epoch % args.eval_freq == 0 or epoch == args.epochs - 1:
-            m1, m2 = validate(val_loader, model, criterion, epoch, wandb)
+            m1, m2 = validate(val_loader, model, criterion, epoch, wandb, args.avg_pool)
 
             score = m1 * m2
             # remember best prec@1 and save checkpoint
@@ -233,9 +234,11 @@ def main():
                 'optimizer': optimizer.state_dict(),
             }, is_best)
 
+        scheduler.step()
+
 
 # TODO: You can add input arguments if you wish
-def train(train_loader, model, criterion, optimizer, epoch, wandb):
+def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=False):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -260,8 +263,12 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb):
 
         # TODO (Q1.1): Perform any necessary operations on the output
         # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
-        maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
-        output = maxPool(imoutput).flatten(start_dim=1)
+        if avg_pool is True:
+            avgPool = nn.AvgPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
+            output = avgPool(imoutput).flatten(start_dim=1)
+        else:
+            maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
+            output = maxPool(imoutput).flatten(start_dim=1)
         output = F.sigmoid(output)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
@@ -314,7 +321,7 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb):
         # End of train()
 
 
-def validate(val_loader, model, criterion, epoch=0, wandb=None):
+def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
     avg_m1 = AverageMeter()
@@ -336,8 +343,12 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None):
 
         # TODO (Q1.1): Perform any necessary functions on the output
         # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
-        maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
-        output = maxPool(imoutput).flatten(start_dim=1)
+        if avg_pool is True:
+            avgPool = nn.AvgPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
+            output = avgPool(imoutput).flatten(start_dim=1)
+        else:
+            maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
+            output = maxPool(imoutput).flatten(start_dim=1)
         output = F.sigmoid(output)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
@@ -421,9 +432,10 @@ def metric1(output, target, threshold=0.5):
     for i in range(n_class):
         gt_class = target[:, i].cpu().numpy().astype('float32')
         pred_class = output[:, i].cpu().numpy().astype('float32')
+        # for cases that there is no gt classes, we ignore the predict 0, and count non-zero predict as ap = 0
         if np.count_nonzero(gt_class) == 0:
             if np.count_nonzero(pred_class > threshold) == 0:
-                ap = 1
+                continue
             else:
                 ap = 0
         else:
@@ -440,17 +452,14 @@ def metric2(output, target, threshold=0.5):
     for i in range(n_class):
         gt_class = target[:, i].cpu().numpy().astype('float32')
         pred_class = output[:, i].cpu().numpy().astype('float32')
-        pred_class = (pred_class > .5).astype(int)
+        pred_class = (pred_class > threshold).astype(int)
         if np.count_nonzero(gt_class) == 0:
-            if np.count_nonzero(pred_class > threshold) == 0:
-                recall = 1
-            else:
-                recall = 0
+            continue
         else:
-            recall = recall_score(gt_class, pred_class, average="macro")
+            recall = recall_score(gt_class, pred_class, average="samples")
         sum_recall.append(recall)
-    mRecall = np.mean(sum_recall)
-    return mRecall
+    m_recall = np.mean(sum_recall)
+    return m_recall
 
 
 if __name__ == '__main__':

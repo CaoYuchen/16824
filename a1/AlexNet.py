@@ -48,17 +48,17 @@ class LocalizerAlexNetRobust(nn.Module):
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
             nn.ReLU(inplace=False),
-            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.AvgPool2d(kernel_size=3, stride=2, ceil_mode=False),
             nn.Conv2d(64, 192, kernel_size=5, padding=2),
             nn.ReLU(inplace=False),
-            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.AvgPool2d(kernel_size=3, stride=2, ceil_mode=False),
             nn.Conv2d(192, 384, kernel_size=3, padding=1),
             nn.ReLU(inplace=False),
             nn.Conv2d(384, 256, kernel_size=3, padding=1),
             nn.ReLU(inplace=False),
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
             nn.ReLU(inplace=False),
-            # nn.MaxPool2d(kernel_size=3, stride=2),
+            # nn.AvgPool2d(kernel_size=3, stride=2),
         )
         self.classifier = nn.Sequential(
             nn.Conv2d(256, 256, kernel_size=3, stride=1),
@@ -66,12 +66,12 @@ class LocalizerAlexNetRobust(nn.Module):
             nn.Conv2d(256, 256, kernel_size=1, stride=1),
             nn.ReLU(inplace=False),
             nn.Conv2d(256, 20, kernel_size=1, stride=1),
-            nn.Dropout2d(p=0.3, inplace=False),
+            # nn.Dropout(p=0.3, inplace=False),
         )
     def forward(self, x):
         # TODO (Q1.7): Define forward pass
         x = self.features(x)
-        x = self.classifier(x)*0.7
+        x = self.classifier(x)
         return x
 
 
