@@ -105,12 +105,20 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 
-def calculate_map(gt_boxes, gt_class_list, pred_boxes, pred_scores, iou_thresh=0.3):
+def calculate_map(all_bboxes, all_scores, all_classes, all_batches, all_gt_boxes, all_gt_classes, iou_thresh=0.3, n_classes=20):
     """
     Calculate the mAP for classification.
     """
     # TODO (Q2.3): Calculate mAP on test set.
     # Feel free to write necessary function parameters.
+    # The list size is N x Array(WxH or S)
+    # N is number of batches multiple by number of classes
+    # W x H is for box size, S is for classes index and scores size and batches index
+    aps = []
+
+    for i in range(len(all_bboxes)):
+        order =
+
     precisions = []
     recalls = []
 
@@ -137,7 +145,7 @@ def calculate_map(gt_boxes, gt_class_list, pred_boxes, pred_scores, iou_thresh=0
     precisions.append(TP / (TP + FP))
     recalls.append(TP / gt_class_list.shape[0])
 
-    mAP = auc(recalls,precisions)
+    mAP = auc(recalls, precisions)
     return mAP
 
 
@@ -146,9 +154,13 @@ def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
     Tests the networks and visualizes the detections
     :param thresh: Confidence threshold
     """
+    # The list size is N x Array(WxH or S)
+    # N is number of batches multiple by number of classes
+    # W x H is for box size, S is for classes index and scores size and batches index
     all_bboxes = []
     all_scores = []
     all_classes = []
+    all_batches = []
     all_gt_boxes = []
     all_gt_classes = []
 
@@ -170,10 +182,11 @@ def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
             # TODO (Q2.3): Iterate over each class (follow comments)
             all_gt_boxes.append(gt_boxes)
             all_gt_classes.append(gt_class_list)
-            
-            pred_boxes = []
-            pred_scores = []
-            # gt_boxes_list = []
+
+            # pred_boxes = []
+            # pred_scores = []
+            # pred_index = []
+
             iou_thresh = 0.3
             for class_num in range(20):
                 # get valid rois and cls_scores based on thresh
@@ -182,16 +195,24 @@ def test_model(model, val_loader=None, thresh=0.0002):  # 0.05
                 boxes = rois[0, index]
                 # use NMS to get boxes and scores
                 nms_boxes, nms_scores = nms(boxes, scores, threshold=iou_thresh)
-                pred_boxes.append(nms_boxes)
-                pred_scores.append(nms_scores)
-                # if class_num in gt_class_list:
-                #     i = np.where(gt_class_list == class_num)[0]
-                #     gt_boxes_list.append(gt_boxes[i])
-                # else:
-                #     gt_boxes_list.append(None)
+
+                # append index of the class to the list together with boxes and scores
+                # pred_boxes.append(nms_boxes)
+                # pred_scores.append(nms_scores)
+                # pred_index.append(np.ones_like(nms_scores) * class_num)
+                all_bboxes.extend(nms_boxes)
+                all_scores.extend(nms_scores)
+                all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
+                all_batches.extend((np.ones_like(nms_scores) * iter).tolist())
+            pass
+            # all_bboxes.append(pred_boxes)
+            # all_scores.append(pred_scores)
+            # all_classes.append(pred_index)
 
         # TODO (Q2.3): visualize bounding box predictions when required
-        mAP = calculate_map(gt_boxes, gt_class_list, pred_boxes, pred_scores, iou_thresh=iou_thresh)
+        AP = calculate_map(all_bboxes, all_scores, all_classes, all_batches, all_gt_boxes, all_gt_classes, iou_thresh=iou_thresh)
+
+    return AP
 
 
 def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=None):
