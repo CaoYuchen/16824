@@ -51,7 +51,7 @@ parser.add_argument(
     help='number of data loading workers (default: 4)')
 parser.add_argument(
     '--epochs',
-    default=2,  # 30
+    default=30,  # 30
     type=int,
     metavar='N',
     help='number of total epochs to run')
@@ -64,7 +64,7 @@ parser.add_argument(
 parser.add_argument(
     '-b',
     '--batch-size',
-    default=1,  # 256
+    default=32,  # 256
     type=int,
     metavar='N',
     help='mini-batch size (default: 256)')
@@ -107,7 +107,7 @@ parser.add_argument(
     '-e',
     '--evaluate',
     dest='evaluate',
-    action='store_true',
+    action='store_false',
     help='evaluate model on validation set')
 parser.add_argument(
     '--pretrained',
@@ -212,14 +212,14 @@ def main():
 
     # TODO (Q1.3): Create loggers for wandb.
     # Ideally, use flags since wandb makes it harder to debug code.
-    if (USE_WANDB):
+    if USE_WANDB:
         wandb.init(project="vlr-hw1")
         # wandb.watch(model, log_freq=100)
         wandb.define_metric("train/step")
         wandb.define_metric("train/*", step_metric="train/step")
 
-        wandb.define_metric("val/step")
-        wandb.define_metric("val/*", step_metric="val/step")
+        wandb.define_metric("val/epoch")
+        wandb.define_metric("val/*", step_metric="val/epoch")
 
     for epoch in range(args.start_epoch, args.epochs):
         # train for one epoch
@@ -313,31 +313,30 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
 
         # TODO (Q1.3): Visualize/log things as mentioned in handout at appropriate intervals
 
-            if USE_WANDB:
-                wandb.log({'train/step': epoch * len(train_loader) + i})
-                wandb.log({'train/loss': losses.val})
-                wandb.log({'train/M1': avg_m1.val})
-                wandb.log({'train/M2': avg_m2.val})
-                wandb.log({'train/LR': optimizer.param_groups[0]['lr']})
+        if USE_WANDB:
+            wandb.log({'train/step': epoch * len(train_loader) + i})
+            wandb.log({'train/loss': losses.val})
+            wandb.log({'train/M1': avg_m1.val})
+            wandb.log({'train/M2': avg_m2.val})
+            wandb.log({'train/LR': optimizer.param_groups[0]['lr']})
 
-        if USE_WANDB_IMAGE:
-            indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
+        epoch_to_plot = [0, 14, 29]
+        batch_to_plot = [10, 69]
+        index_image = 5
+        if USE_WANDB_IMAGE and epoch in epoch_to_plot and i in batch_to_plot:
+            index_class = (target.flatten() == 1).nonzero().flatten().tolist()[0]
             heatmap = F.sigmoid(
-                F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
+                F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
+                              [input.size(2), input.size(3)],
                               mode='bilinear', align_corners=True))
             heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
             # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
             # heatmap = tensor_to_PIL(heatmap[0])
-            gt_image = wandb.Image(tensor_to_PIL(images[image_idx]),
+            gt_image = wandb.Image(tensor_to_PIL(input[index_image]),
                                    caption='RGB Image')
-            heatmap = wandb.Image(heatmap, caption=f'{VOCDataset.CLASS_NAMES[j]}')
+            heatmap = wandb.Image(heatmap, caption=f'{VOCDataset.CLASS_NAMES[index_class]}')
             wandb.log({"train/Heatmaps": [gt_image, heatmap]})
 
-            # wandb.log({"train/epoch": epoch,
-            #            "train/iteration": i,
-            #            "train/loss": loss,
-            #            "train/image": wandb.Image(input),
-            #            "train/heatmap": wandb.Image(heatmap)})
         # End of train()
 
 
@@ -397,33 +396,35 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
                 avg_m1=avg_m1,
                 avg_m2=avg_m2))
 
-            step = epoch // args.eval_freq * len(val_loader) + i
-            if USE_WANDB:
-                wandb.log({'val/step': step})
-                wandb.log({'val/loss': losses.val})
-                wandb.log({'val/M1': avg_m1.val})
-                wandb.log({'val/M2': avg_m2.val})
 
         # TODO (Q1.3): Visualize things as mentioned in handout
         # TODO (Q1.3): Visualize at appropriate intervals
-        if USE_WANDB_IMAGE:
-            indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
+        epoch_to_plot = 29
+        batch_to_plot = [5, 21, 57]
+        index_image = 3
+        if USE_WANDB_IMAGE and epoch == epoch_to_plot and i in batch_to_plot:
+            index_class = (target.flatten() == 1).nonzero().flatten().tolist()[0]
             heatmap = F.sigmoid(
-                F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
+                F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
+                              [input.size(2), input.size(3)],
                               mode='bilinear', align_corners=True))
             heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
-
-            gt_image = wandb.Image(tensor_to_PIL(images[0]), caption='Ground Truth')
-            heatmap = wandb.Image(heatmap, caption=f'{VOCDataset.CLASS_NAMES[j]}')
+            # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
+            # heatmap = tensor_to_PIL(heatmap[0])
+            gt_image = wandb.Image(tensor_to_PIL(input[index_image]),
+                                   caption='RGB Image')
+            heatmap = wandb.Image(heatmap, caption=f'{VOCDataset.CLASS_NAMES[index_class]}')
             wandb.log({"val/Heatmaps": [gt_image, heatmap]})
         # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
         # heatmap = tensor_to_PIL(heatmap[0])
-        # if (USE_WANDB):
-        #     wandb.log({"train/epoch": epoch,
-        #                "train/iteration": i,
-        #                "train/loss": loss,
-        #                "train/image": wandb.Image(input),
-        #                "train/heatmap": wandb.Image(heatmap)})
+
+    # print avg in an epoch fashion
+    if USE_WANDB and epoch % args.eval_freq == 0:
+        # step = epoch // args.eval_freq * len(val_loader) + i
+        wandb.log({'val/epoch': epoch})
+        # wandb.log({'val/loss': losses.val})
+        wandb.log({'val/M1': avg_m1.avg})
+        wandb.log({'val/M2': avg_m2.avg})
 
     print(' * Metric1 {avg_m1.avg:.3f} Metric2 {avg_m2.avg:.3f}'.format(
         avg_m1=avg_m1, avg_m2=avg_m2))

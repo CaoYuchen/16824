@@ -15,10 +15,11 @@ import pickle as pkl
 from wsddn import WSDDN
 from voc_dataset import *
 import wandb
-from utils import nms, iou, tensor_to_PIL
+from utils import nms, iou, tensor_to_PIL, get_box_data
 from PIL import Image, ImageDraw
 
 from sklearn.metrics import auc
+from torch.optim.lr_scheduler import StepLR
 
 # hyper-parameters
 # ------------
@@ -95,6 +96,7 @@ parser.add_argument(
 
 USE_WANDB = False
 USE_WANDB_IMAGE = False
+images_to_plot = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500]
 
 # Set random seed
 rand_seed = 1024
@@ -175,7 +177,7 @@ def calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_clas
         aps.append(ap)
 
     m_ap = np.mean(aps)
-    return m_ap
+    return m_ap, aps
 
 
 def test_model(model, val_loader=None, thresh=0.0002, wandb=None):  # 0.05
@@ -240,22 +242,23 @@ def test_model(model, val_loader=None, thresh=0.0002, wandb=None):  # 0.05
             # all_scores.append(pred_scores)
             # all_classes.append(pred_index)
 
-        AP = calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_classes, iou_thresh=iou_thresh)
+        map, aps = calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_classes,
+                                 iou_thresh=iou_thresh)
         # TODO (Q2.3): visualize bounding box predictions when required
         if iter in images_to_plot and USE_WANDB_IMAGE:
             rois_image = wandb.Image(image.cpu().detach(),
                                      boxes={
                                          "predictions": {
-                                             "box_data": get_box_data_caption(classes_i,
-                                                                              class_bboxes_i,
-                                                                              class_scores_i,
-                                                                              val_dataset.CLASS_NAMES),
+                                             "box_data": get_box_data(classes_i,
+                                                                      class_bboxes_i,
+                                                                      class_scores_i,
+                                                                      val_dataset.CLASS_NAMES),
                                              "class_labels": class_id_to_label,
                                          },
                                      })
             wandb.log({f"val/Bounding Boxes_{iter}": rois_image})
 
-    return AP
+    return map, aps
 
 
 def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=None, wandb=None):
@@ -294,11 +297,11 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
 
             # TODO (Q2.2): evaluate the model every N iterations (N defined in handout)
             # Add wandb logging wherever necessary
-            ap = test_model(model, val_loader, wandb=wandb)
+            map, aps = test_model(model, val_loader, wandb=wandb)
             if iter % args.val_interval == 0 and iter != 0:
                 model.eval()
-                ap = test_model(model, val_loader, wandb=wandb)
-                print("AP ", ap)
+                map, aps = test_model(model, val_loader, wandb=wandb)
+                print("AP ", aps)
                 model.train()
 
             # TODO (Q2.4): Perform all visualizations here
@@ -306,15 +309,15 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
             rois_image = wandb.Image(image.cpu().detach(),
                                      boxes={
                                          "predictions": {
-                                             "box_data": get_box_data_caption(classes,
-                                                                              class_bboxes,
-                                                                              class_scores,
-                                                                              train_dataset.CLASS_NAMES),
+                                             "box_data": get_box_data(classes,
+                                                                      class_bboxes,
+                                                                      class_scores,
+                                                                      train_dataset.CLASS_NAMES),
                                              "class_labels": class_id_to_label,
                                          },
                                      })
 
-            wandb.log({f"train/Bounding Boxes_{i}": rois_image})
+            wandb.log({f"train/Bounding Boxes_{iter}": rois_image})
 
     # TODO (Q2.4): Plot class-wise APs
     if USE_WANDB:
@@ -395,7 +398,7 @@ def main():
         param.requires_grad = False
     # TODO (Q2.2): Create optimizer only for network parameters that are trainable
     optimizer = torch.optim.SGD(net.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+    # scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
 
     # wandb for visualization
     if USE_WANDB:
