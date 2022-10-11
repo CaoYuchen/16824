@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw
 
 from sklearn.metrics import auc
 from torch.optim.lr_scheduler import StepLR
+from task_1 import AverageMeter
 
 # hyper-parameters
 # ------------
@@ -88,7 +89,7 @@ parser.add_argument(
 parser.add_argument(
     '-b',
     '--batch-size',
-    default=1,  # 256
+    default=1,  # 1
     type=int,
     metavar='N',
     help='mini-batch size (default: 256)')
