@@ -32,6 +32,7 @@ from AlexNet import localizer_alexnet, localizer_alexnet_robust
 from voc_dataset import *
 from utils import *
 
+import cv2
 from torch.optim.lr_scheduler import StepLR
 
 USE_WANDB = False  # use flags, wandb is not convenient for debugging
@@ -272,17 +273,17 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
         # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
         if avg_pool is True:
             avgPool = nn.AvgPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
-            output = avgPool(imoutput).flatten(start_dim=1)
+            pooloutput = avgPool(imoutput).flatten(start_dim=1)
         else:
             maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
-            output = maxPool(imoutput).flatten(start_dim=1)
-        output = torch.sigmoid(output)
+            pooloutput = maxPool(imoutput).flatten(start_dim=1)
+        output = torch.sigmoid(pooloutput)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
 
         # measure metrics and record loss
-        m1 = metric1(imoutput.data, target)
-        m2 = metric2(imoutput.data, target)
+        m1 = metric1(pooloutput.data, target)
+        m2 = metric2(pooloutput.data, target)
         losses.update(loss.item(), input.size(0))
         avg_m1.update(m1)
         avg_m2.update(m2)
@@ -325,11 +326,10 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
         index_image = 5
         if USE_WANDB_IMAGE and epoch in epoch_to_plot and i in batch_to_plot:
             index_class = torch.argsort(target[index_image])[-1]
-            heatmap = torch.sigmoid(
-                F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
-                              [input.size(2), input.size(3)],
-                              mode='bilinear', align_corners=True))
-            heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
+            heatmap = cv2.resize(imoutput[index_image, index_class].cpu().detach().numpy(),
+                                 (input.size(2), input.size(3)))
+            heatmap = (heatmap - heatmap.min()) / (heatmap.max() - heatmap.min())
+            heatmap = Image.fromarray(cv2.applyColorMap((heatmap * 255).astype(np.uint8), cv2.COLORMAP_MAGMA))
             # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
             # heatmap = tensor_to_PIL(heatmap[0])
             gt_image = wandb.Image(tensor_to_PIL(input[index_image]),
@@ -364,17 +364,17 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
         # maxPool the batch*channel*n*m to batch*channel*1*1 for global label
         if avg_pool is True:
             avgPool = nn.AvgPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
-            output = avgPool(imoutput).flatten(start_dim=1)
+            pooloutput = avgPool(imoutput).flatten(start_dim=1)
         else:
             maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
-            output = maxPool(imoutput).flatten(start_dim=1)
-        output = torch.sigmoid(output)
+            pooloutput = maxPool(imoutput).flatten(start_dim=1)
+        output = torch.sigmoid(pooloutput)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
 
         # measure metrics and record loss
-        m1 = metric1(imoutput.data, target)
-        m2 = metric2(imoutput.data, target)
+        m1 = metric1(pooloutput.data, target)
+        m2 = metric2(pooloutput.data, target)
         losses.update(loss.item(), input.size(0))
         avg_m1.update(m1)
         avg_m2.update(m2)
@@ -403,11 +403,10 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
         index_image = 3
         if USE_WANDB_IMAGE and epoch == epoch_to_plot and i in batch_to_plot:
             index_class = torch.argsort(target[index_image])[-1]
-            heatmap = torch.sigmoid(
-                F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
-                              [input.size(2), input.size(3)],
-                              mode='bilinear', align_corners=True))
-            heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
+            heatmap = cv2.resize(imoutput[index_image, index_class].cpu().detach().numpy(),
+                                 (input.size(2), input.size(3)))
+            heatmap = (heatmap - heatmap.min()) / (heatmap.max() - heatmap.min())
+            heatmap = Image.fromarray(cv2.applyColorMap((heatmap * 255).astype(np.uint8), cv2.COLORMAP_MAGMA))
             # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
             # heatmap = tensor_to_PIL(heatmap[0])
             gt_image = wandb.Image(tensor_to_PIL(input[index_image]),
