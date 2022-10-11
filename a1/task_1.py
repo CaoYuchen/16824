@@ -281,8 +281,8 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
         loss = criterion(output, target)
 
         # measure metrics and record loss
-        m1 = metric1(output.data, target)
-        m2 = metric2(output.data, target)
+        m1 = metric1(imoutput.data, target)
+        m2 = metric2(imoutput.data, target)
         losses.update(loss.item(), input.size(0))
         avg_m1.update(m1)
         avg_m2.update(m2)
@@ -373,8 +373,8 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
         loss = criterion(output, target)
 
         # measure metrics and record loss
-        m1 = metric1(output.data, target)
-        m2 = metric2(output.data, target)
+        m1 = metric1(imoutput.data, target)
+        m2 = metric2(imoutput.data, target)
         losses.update(loss.item(), input.size(0))
         avg_m1.update(m1)
         avg_m2.update(m2)
