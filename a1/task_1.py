@@ -324,7 +324,7 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
         batch_to_plot = [10, 69]
         index_image = 5
         if USE_WANDB_IMAGE and epoch in epoch_to_plot and i in batch_to_plot:
-            index_class = (target.flatten() == 1).nonzero().flatten().tolist()[0]
+            index_class = torch.argsort(target[index_image])[-1]
             heatmap = torch.sigmoid(
                 F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
                               [input.size(2), input.size(3)],
@@ -396,14 +396,13 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
                 avg_m1=avg_m1,
                 avg_m2=avg_m2))
 
-
         # TODO (Q1.3): Visualize things as mentioned in handout
         # TODO (Q1.3): Visualize at appropriate intervals
         epoch_to_plot = 29
         batch_to_plot = [5, 21, 57]
         index_image = 3
         if USE_WANDB_IMAGE and epoch == epoch_to_plot and i in batch_to_plot:
-            index_class = (target.flatten() == 1).nonzero().flatten().tolist()[0]
+            index_class = torch.argsort(target[index_image])[-1]
             heatmap = torch.sigmoid(
                 F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
                               [input.size(2), input.size(3)],
