@@ -71,7 +71,7 @@ parser.add_argument(
 parser.add_argument(
     '--lr',
     '--learning-rate',
-    default=0.01,
+    default=0.1,
     type=float,
     metavar='LR',
     help='initial learning rate')
@@ -127,7 +127,7 @@ parser.add_argument(
 parser.add_argument(
     '--dist-backend', default='gloo', type=str, help='distributed backend')
 parser.add_argument('--vis', action='store_true')
-parser.add_argument('--avg-pool', default=True, type=bool, help="Use avg_pool instead of max_pool")
+parser.add_argument('--avg-pool', default=False, type=bool, help="Use avg_pool instead of max_pool")
 
 best_prec1 = 0
 
@@ -150,7 +150,7 @@ def main():
 
     # TODO (Q1.1): define loss function (criterion) and optimizer from [1]
     # also use an LR scheduler to decay LR by 10 every 30 epochs
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCELoss()
     optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
 
@@ -213,7 +213,7 @@ def main():
     # TODO (Q1.3): Create loggers for wandb.
     # Ideally, use flags since wandb makes it harder to debug code.
     if USE_WANDB:
-        wandb.init(project="vlr-hw1")
+        wandb.init(project="vlr-hw1", reinit=True)
         # wandb.watch(model, log_freq=100)
         wandb.define_metric("train/step")
         wandb.define_metric("train/*", step_metric="train/step")

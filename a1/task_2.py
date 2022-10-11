@@ -433,7 +433,7 @@ def main():
 
     # wandb for visualization
     if USE_WANDB:
-        wandb.init(project='vlr-hw2')
+        wandb.init(project='vlr-hw1', reinit=True)
         wandb.watch(net, log_freq=2000)
         wandb.define_metric("train/step")
         wandb.define_metric("train/*", step_metric="train/step")
