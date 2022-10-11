@@ -107,7 +107,7 @@ parser.add_argument(
     '-e',
     '--evaluate',
     dest='evaluate',
-    action='store_false',
+    action='store_true',
     help='evaluate model on validation set')
 parser.add_argument(
     '--pretrained',
