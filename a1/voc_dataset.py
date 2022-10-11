@@ -194,9 +194,10 @@ class VOCDataset(Dataset):
         image = torch.stack([d['image'] for d in data])
         label = torch.stack([d['label'] for d in data])
         wgt = torch.stack([d['wgt'] for d in data])
-        rois = torch.stack([d['rois'] for d in data])
+        rois = [d['rois'] for d in data]
         gt_classes = [torch.tensor(d['gt_classes']) for d in data]
         gt_boxes = [torch.tensor(d['gt_boxes']) for d in data]
+        rois = pad_sequence(rois, batch_first=True)
         gt_classes = pad_sequence(gt_classes, batch_first=True)
         gt_boxes = pad_sequence(gt_boxes, batch_first=True)
         return {

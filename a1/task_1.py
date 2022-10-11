@@ -276,7 +276,7 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
         else:
             maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
             output = maxPool(imoutput).flatten(start_dim=1)
-        output = F.sigmoid(output)
+        output = torch.sigmoid(output)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
 
@@ -325,7 +325,7 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
         index_image = 5
         if USE_WANDB_IMAGE and epoch in epoch_to_plot and i in batch_to_plot:
             index_class = (target.flatten() == 1).nonzero().flatten().tolist()[0]
-            heatmap = F.sigmoid(
+            heatmap = torch.sigmoid(
                 F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
                               [input.size(2), input.size(3)],
                               mode='bilinear', align_corners=True))
@@ -368,7 +368,7 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
         else:
             maxPool = nn.MaxPool2d((imoutput.size(dim=2), imoutput.size(dim=3)), stride=1)
             output = maxPool(imoutput).flatten(start_dim=1)
-        output = F.sigmoid(output)
+        output = torch.sigmoid(output)
         # TODO (Q1.1): Compute loss using ``criterion``
         loss = criterion(output, target)
 
@@ -404,7 +404,7 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
         index_image = 3
         if USE_WANDB_IMAGE and epoch == epoch_to_plot and i in batch_to_plot:
             index_class = (target.flatten() == 1).nonzero().flatten().tolist()[0]
-            heatmap = F.sigmoid(
+            heatmap = torch.sigmoid(
                 F.interpolate(imoutput[index_image:index_image + 1, index_class:index_class + 1],
                               [input.size(2), input.size(3)],
                               mode='bilinear', align_corners=True))
