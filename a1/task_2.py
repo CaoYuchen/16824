@@ -136,14 +136,14 @@ def calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_clas
         fp = 0
         precisions = []
         recalls = []
-        gts_count = all_gt_classes[n_class].size(0)
+        gts_count = all_gt_classes[n_class].shape[0]
 
-        orders = np.asarray(-all_scores[n_classes]).argsort()
+        orders = np.asarray(-all_scores[n_class]).argsort()
         visited = np.zeros_like(all_gt_classes[n_class])
         visited_count = 0
         # per predicted bbox
         for order in orders:
-            if visited_count == visited.size(0):
+            if visited_count == visited.shape[0]:
                 fp += 1
                 precisions.append(tp / (tp + fp + eps))
                 recalls.append(tp / (gts_count + eps))
