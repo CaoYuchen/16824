@@ -63,10 +63,10 @@ def iou(box1, box2):
                         min(box1[3], box2[3])]
 
     intersection = (intersection_box[2] - intersection_box[0]) * \
-        (intersection_box[3] - intersection_box[1])
+                   (intersection_box[3] - intersection_box[1])
 
     if intersection_box[0] > intersection_box[2] or \
-        intersection_box[1] > intersection_box[3]:
+            intersection_box[1] > intersection_box[3]:
         intersection = 0
 
     union = area1 + area2 - intersection
@@ -108,6 +108,28 @@ def get_box_data(classes, bbox_coordinates):
             "maxY": bbox_coordinates[i][3],
         },
         "class_id": classes[i],
+    } for i in range(len(classes))
+    ]
+
+    return box_list
+
+
+def get_box_data_caption(classes, bbox_coordinates, scores, class_names):
+    """
+    classes : tensor containing class predictions/gt
+    bbox_coordinates: tensor containing [[xmin0, ymin0, xmax0, ymax0], [xmin1, ymin1, ...]] (Nx4)
+    return list of boxes as expected by the wandb bbox plotter
+    """
+    box_list = [{
+        "position": {
+            "minX": bbox_coordinates[i][0],
+            "minY": bbox_coordinates[i][1],
+            "maxX": bbox_coordinates[i][2],
+            "maxY": bbox_coordinates[i][3],
+        },
+        "class_id": classes[i],
+        "box_caption": '{class_name} - {score:.3f}'.format(score=scores[i],
+                                                           class_name=class_names[classes[i]])
     } for i in range(len(classes))
     ]
 

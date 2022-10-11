@@ -15,7 +15,7 @@ import pickle as pkl
 from wsddn import WSDDN
 from voc_dataset import *
 import wandb
-from utils import nms, iou, tensor_to_PIL, get_box_data
+from utils import nms, iou, tensor_to_PIL, get_box_data_caption
 from PIL import Image, ImageDraw
 
 from sklearn.metrics import auc
@@ -94,11 +94,12 @@ parser.add_argument(
     metavar='N',
     help='mini-batch size (default: 256)')
 # ------------
-
+# wandb related parameters
 USE_WANDB = False
 USE_WANDB_IMAGE = False
+class_id_to_label = dict(enumerate(VOCDataset.CLASS_NAMES))
 images_to_plot = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500]
-
+epoch_to_plot = [0, 4]
 # Set random seed
 rand_seed = 1024
 if rand_seed is not None:
@@ -217,11 +218,12 @@ def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
             all_gt_boxes.append(gt_boxes)
             all_gt_classes.append(gt_class_list)
 
-            # pred_boxes = []
-            # pred_scores = []
-            # pred_index = []
+            pred_boxes = []
+            pred_scores = []
+            pred_index = []
 
             iou_thresh = 0.3
+            first_n = 3
             for class_num in range(20):
                 # get valid rois and cls_scores based on thresh
                 index = np.where(cls_probs[:, class_num] > thresh)[0]
@@ -230,10 +232,12 @@ def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
                 # use NMS to get boxes and scores
                 nms_boxes, nms_scores = nms(boxes, scores, threshold=iou_thresh)
 
-                # append index of the class to the list together with boxes and scores
-                # pred_boxes.append(nms_boxes)
-                # pred_scores.append(nms_scores)
-                # pred_index.append(np.ones_like(nms_scores) * class_num)
+                # append index of the class to the list together with boxes and scores for wandb plot
+                pred_boxes.append(nms_boxes[0:first_n])
+                pred_scores.append(nms_scores[0:first_n])
+                pred_index.append(np.ones_like(nms_scores[0:first_n]) * class_num)
+
+                # extend list for map calculation
                 # all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
                 all_bboxes[class_num].extend(nms_boxes)
                 all_scores[class_num].extend(nms_scores)
@@ -243,22 +247,22 @@ def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
             # all_scores.append(pred_scores)
             # all_classes.append(pred_index)
 
+            # TODO (Q2.3): visualize bounding box predictions when required
+            if USE_WANDB_IMAGE:
+                rois_image = wandb.Image(image.cpu().detach(),
+                                         boxes={
+                                             "predictions": {
+                                                 "box_data": get_box_data_caption(pred_index,
+                                                                                  pred_boxes,
+                                                                                  pred_scores,
+                                                                                  VOCDataset.CLASS_NAMES),
+                                                 "class_labels": class_id_to_label,
+                                             },
+                                         })
+                wandb.log({f"val/Bounding Boxes_{iter}": rois_image})
+
         map, aps = calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_classes,
                                  iou_thresh=iou_thresh)
-        # TODO (Q2.3): visualize bounding box predictions when required
-        if iter in images_to_plot and USE_WANDB_IMAGE:
-            rois_image = wandb.Image(image.cpu().detach(),
-                                     boxes={
-                                         "predictions": {
-                                             "box_data": get_box_data(classes_i,
-                                                                      class_bboxes_i,
-                                                                      class_scores_i,
-                                                                      val_dataset.CLASS_NAMES),
-                                             "class_labels": class_id_to_label,
-                                         },
-                                     })
-            wandb.log({f"val/Bounding Boxes_{iter}": rois_image})
-
     return map, aps
 
 
@@ -267,8 +271,11 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
     Trains the network, runs evaluation and visualizes the detections
     """
     # Initialize training variables
-    train_loss = 0
+    train_loss = AverageMeter()
     step_cnt = 0
+    loss_interval = 500
+    map = 0
+    aps = []
     for epoch in range(args.epochs):
         for iter, data in enumerate(train_loader):
 
@@ -285,11 +292,12 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
             # take care that proposal values should be in pixels
             # Convert inputs to cuda if training on GPU
 
-            model(image, rois, target)
-
+            cls_probs = model(image, rois, target)
+            cls_probs = cls_probs.data.cpu().numpy()
             # backward pass and update
             loss = model.loss
-            train_loss += loss.item()
+            # train_loss += loss.item()
+            train_loss.update(loss.item(), image.size(0))
             step_cnt += 1
 
             optimizer.zero_grad()
@@ -307,23 +315,45 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
 
             # TODO (Q2.4): Perform all visualizations here
             # The intervals for different things are defined in the handout
-            rois_image = wandb.Image(image.cpu().detach(),
-                                     boxes={
-                                         "predictions": {
-                                             "box_data": get_box_data(classes,
-                                                                      class_bboxes,
-                                                                      class_scores,
-                                                                      train_dataset.CLASS_NAMES),
-                                             "class_labels": class_id_to_label,
-                                         },
-                                     })
+            if USE_WANDB and iter % loss_interval == 0:
+                wandb.log({'train/step': step_cnt})
+                wandb.log({'train/loss': train_loss.val})
+            if iter in images_to_plot and epoch in epoch_to_plot and USE_WANDB_IMAGE:
+                conf_thresh = 0.05
+                first_n = 3
+                pred_boxes = []
+                pred_scores = []
+                pred_index = []
 
-            wandb.log({f"train/Bounding Boxes_{iter}": rois_image})
+                for class_num in range(20):
+                    # get valid rois and cls_scores based on thresh
+                    index = np.where(cls_probs[:, class_num] > conf_thresh)[0]
+                    scores = cls_probs[index, class_num]
+                    boxes = rois[0, index]
+                    # use NMS to get boxes and scores
+                    nms_boxes, nms_scores = nms(boxes, scores)
+
+                    pred_boxes.append(nms_boxes[0:first_n])
+                    pred_scores.append(nms_scores[0:first_n])
+                    pred_index.append(np.ones_like(nms_scores[0:first_n]) * class_num)
+
+                rois_image = wandb.Image(image.cpu().detach(),
+                                         boxes={
+                                             "predictions": {
+                                                 "box_data": get_box_data_caption(pred_index,
+                                                                                  pred_boxes,
+                                                                                  pred_scores,
+                                                                                  VOCDataset.CLASS_NAMES),
+                                                 "class_labels": class_id_to_label,
+                                             },
+                                         })
+
+                wandb.log({f"train/Bounding Boxes_{iter}": rois_image})
 
     # TODO (Q2.4): Plot class-wise APs
     if USE_WANDB:
         wandb.log({'val/map': map})
-        for i in classes:
+        for i in range(5):
             wandb.log({f'val/ap_{i}_{VOCDataset.CLASS_NAMES[i]}': aps[i]})
 
 
