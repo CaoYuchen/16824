@@ -180,7 +180,7 @@ def calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_clas
     return m_ap, aps
 
 
-def test_model(model, val_loader=None, thresh=0.0002, wandb=None):  # 0.05
+def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
     """
     Tests the networks and visualizes the detections
     :param thresh: Confidence threshold
@@ -233,11 +233,11 @@ def test_model(model, val_loader=None, thresh=0.0002, wandb=None):  # 0.05
                 # pred_boxes.append(nms_boxes)
                 # pred_scores.append(nms_scores)
                 # pred_index.append(np.ones_like(nms_scores) * class_num)
+                # all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
                 all_bboxes[class_num].extend(nms_boxes)
                 all_scores[class_num].extend(nms_scores)
-                # all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
                 all_batches[class_num].extend((np.ones_like(nms_scores) * iter).tolist())
-            pass
+
             # all_bboxes.append(pred_boxes)
             # all_scores.append(pred_scores)
             # all_classes.append(pred_index)
@@ -297,7 +297,7 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
 
             # TODO (Q2.2): evaluate the model every N iterations (N defined in handout)
             # Add wandb logging wherever necessary
-            map, aps = test_model(model, val_loader, wandb=wandb)
+            # map, aps = test_model(model, val_loader, wandb=wandb)
             if iter % args.val_interval == 0 and iter != 0:
                 model.eval()
                 map, aps = test_model(model, val_loader, wandb=wandb)
