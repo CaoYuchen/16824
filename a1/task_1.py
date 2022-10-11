@@ -35,6 +35,7 @@ from utils import *
 from torch.optim.lr_scheduler import StepLR
 
 USE_WANDB = False  # use flags, wandb is not convenient for debugging
+USE_WANDB_IMAGE = False
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
                      and callable(models.__dict__[name]))
@@ -213,6 +214,12 @@ def main():
     # Ideally, use flags since wandb makes it harder to debug code.
     if (USE_WANDB):
         wandb.init(project="vlr-hw1")
+        # wandb.watch(model, log_freq=100)
+        wandb.define_metric("train/step")
+        wandb.define_metric("train/*", step_metric="train/step")
+
+        wandb.define_metric("val/step")
+        wandb.define_metric("val/*", step_metric="val/step")
 
     for epoch in range(args.start_epoch, args.epochs):
         # train for one epoch
@@ -305,19 +312,32 @@ def train(train_loader, model, criterion, optimizer, epoch, wandb, avg_pool=Fals
                 avg_m2=avg_m2))
 
         # TODO (Q1.3): Visualize/log things as mentioned in handout at appropriate intervals
-        indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
-        heatmap = F.sigmoid(
-            F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
-                          mode='bilinear', align_corners=True))
-        heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
-        # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
-        # heatmap = tensor_to_PIL(heatmap[0])
-        if (USE_WANDB):
-            wandb.log({"train/epoch": epoch,
-                       "train/iteration": i,
-                       "train/loss": loss,
-                       "train/image": wandb.Image(input),
-                       "train/heatmap": wandb.Image(heatmap)})
+
+            if USE_WANDB:
+                wandb.log({'train/step': epoch * len(train_loader) + i})
+                wandb.log({'train/loss': losses.val})
+                wandb.log({'train/M1': avg_m1.val})
+                wandb.log({'train/M2': avg_m2.val})
+                wandb.log({'train/LR': optimizer.param_groups[0]['lr']})
+
+        if USE_WANDB_IMAGE:
+            indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
+            heatmap = F.sigmoid(
+                F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
+                              mode='bilinear', align_corners=True))
+            heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
+            # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
+            # heatmap = tensor_to_PIL(heatmap[0])
+            gt_image = wandb.Image(tensor_to_PIL(images[image_idx]),
+                                   caption='RGB Image')
+            heatmap = wandb.Image(heatmap, caption=f'{VOCDataset.CLASS_NAMES[j]}')
+            wandb.log({"train/Heatmaps": [gt_image, heatmap]})
+
+            # wandb.log({"train/epoch": epoch,
+            #            "train/iteration": i,
+            #            "train/loss": loss,
+            #            "train/image": wandb.Image(input),
+            #            "train/heatmap": wandb.Image(heatmap)})
         # End of train()
 
 
@@ -377,21 +397,33 @@ def validate(val_loader, model, criterion, epoch=0, wandb=None, avg_pool=False):
                 avg_m1=avg_m1,
                 avg_m2=avg_m2))
 
+            step = epoch // args.eval_freq * len(val_loader) + i
+            if USE_WANDB:
+                wandb.log({'val/step': step})
+                wandb.log({'val/loss': losses.val})
+                wandb.log({'val/M1': avg_m1.val})
+                wandb.log({'val/M2': avg_m2.val})
+
         # TODO (Q1.3): Visualize things as mentioned in handout
         # TODO (Q1.3): Visualize at appropriate intervals
-        indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
-        heatmap = F.sigmoid(
-            F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
-                          mode='bilinear', align_corners=True))
-        heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
+        if USE_WANDB_IMAGE:
+            indexHeatmap = (target.flatten() == 1).nonzero().flatten().tolist()
+            heatmap = F.sigmoid(
+                F.interpolate(imoutput[:, indexHeatmap[0]:indexHeatmap[0] + 1], [input.size(2), input.size(3)],
+                              mode='bilinear', align_corners=True))
+            heatmap = Image.fromarray(np.uint8(cm.jet(heatmap[0][0].cpu().detach().numpy()) * 255))
+
+            gt_image = wandb.Image(tensor_to_PIL(images[0]), caption='Ground Truth')
+            heatmap = wandb.Image(heatmap, caption=f'{VOCDataset.CLASS_NAMES[j]}')
+            wandb.log({"val/Heatmaps": [gt_image, heatmap]})
         # heatmap = torch.cat((heatmap, heatmap, heatmap), 1)
         # heatmap = tensor_to_PIL(heatmap[0])
-        if (USE_WANDB):
-            wandb.log({"train/epoch": epoch,
-                       "train/iteration": i,
-                       "train/loss": loss,
-                       "train/image": wandb.Image(input),
-                       "train/heatmap": wandb.Image(heatmap)})
+        # if (USE_WANDB):
+        #     wandb.log({"train/epoch": epoch,
+        #                "train/iteration": i,
+        #                "train/loss": loss,
+        #                "train/image": wandb.Image(input),
+        #                "train/heatmap": wandb.Image(heatmap)})
 
     print(' * Metric1 {avg_m1.avg:.3f} Metric2 {avg_m2.avg:.3f}'.format(
         avg_m1=avg_m1, avg_m2=avg_m2))
