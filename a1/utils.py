@@ -120,17 +120,19 @@ def get_box_data_caption(classes, bbox_coordinates, scores, class_names):
     bbox_coordinates: tensor containing [[xmin0, ymin0, xmax0, ymax0], [xmin1, ymin1, ...]] (Nx4)
     return list of boxes as expected by the wandb bbox plotter
     """
-    box_list = [{
-        "position": {
-            "minX": bbox_coordinates[i][0],
-            "minY": bbox_coordinates[i][1],
-            "maxX": bbox_coordinates[i][2],
-            "maxY": bbox_coordinates[i][3],
-        },
-        "class_id": classes[i],
-        "box_caption": '{class_name} - {score:.3f}'.format(score=scores[i],
-                                                           class_name=class_names[classes[i]])
-    } for i in range(len(classes))
-    ]
+    box_list = []
+    for i in range(len(classes)):
+        if len(bbox_coordinates[i]) == 4:
+            box_list.append({
+                "position": {
+                    "minX": bbox_coordinates[i][0],
+                    "minY": bbox_coordinates[i][1],
+                    "maxX": bbox_coordinates[i][2],
+                    "maxY": bbox_coordinates[i][3],
+                },
+                "class_id": classes[i],
+                "box_caption": '{class_name} - {score:.3f}'.format(score=scores[i],
+                                                                   class_name=class_names[classes[i]])
+            })
 
     return box_list

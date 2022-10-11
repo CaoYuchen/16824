@@ -294,6 +294,7 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
 
             cls_probs = model(image, rois, target)
             cls_probs = cls_probs.data.cpu().numpy()
+            rois = rois.data.cpu().numpy()
             # backward pass and update
             loss = model.loss
             # train_loss += loss.item()
