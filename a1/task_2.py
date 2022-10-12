@@ -138,7 +138,7 @@ def calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_clas
         recalls = []
         gts_count = all_gt_classes[n_class].shape[0]
 
-        orders = np.asarray(-all_scores[n_class]).argsort()
+        orders = (-np.asarray(all_scores[n_class])).argsort()
         visited = np.zeros_like(all_gt_classes[n_class])
         visited_count = 0
         # per predicted bbox
@@ -241,7 +241,7 @@ def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
                 # all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
                 all_bboxes[class_num].extend(nms_boxes)
                 all_scores[class_num].extend(nms_scores)
-                all_batches[class_num].extend((np.ones_like(nms_scores) * iter).tolist())
+                all_batches[class_num].extend((np.ones_like(nms_scores) * iter).astype(int).tolist())
 
             # all_bboxes.append(pred_boxes)
             # all_scores.append(pred_scores)
