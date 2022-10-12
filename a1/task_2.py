@@ -143,7 +143,7 @@ def calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_clas
         visited_count = 0
         # per predicted bbox
         for order in orders:
-            if visited_count == visited.shape[0]:
+            if visited_count == visited.shape[0] - 1:
                 fp += 1
                 precisions.append(tp / (tp + fp + eps))
                 recalls.append(tp / (gts_count + eps))
@@ -182,7 +182,7 @@ def calculate_map(all_bboxes, all_scores, all_batches, all_gt_boxes, all_gt_clas
     return m_ap, aps
 
 
-def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
+def test_model(model, val_loader=None, thresh=0.05, wandb=None, epoch=None):  # 0.05
     """
     Tests the networks and visualizes the detections
     :param thresh: Confidence threshold
@@ -207,8 +207,8 @@ def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
             target = data['label'].cuda()
             # wgt = data['wgt'].cuda()
             rois = data['rois'].cuda()
-            gt_boxes = data['gt_boxes'].squeeze().numpy()
-            gt_class_list = data['gt_classes'].squeeze().numpy()
+            gt_boxes = data['gt_boxes'].squeeze(0).numpy()
+            gt_class_list = data['gt_classes'].squeeze(0).numpy()
 
             # TODO (Q2.3): perform forward pass, compute cls_probs
             cls_probs = model(image, rois, target)
@@ -239,16 +239,16 @@ def test_model(model, val_loader=None, thresh=0.05, wandb=None):  # 0.05
 
                 # extend list for map calculation
                 # all_classes.extend((np.ones_like(nms_scores) * class_num).tolist())
-                all_bboxes[class_num].extend(nms_boxes)
-                all_scores[class_num].extend(nms_scores)
-                all_batches[class_num].extend((np.ones_like(nms_scores) * iter).astype(int).tolist())
+                all_bboxes[class_num].append(nms_boxes)
+                all_scores[class_num].append(nms_scores)
+                all_batches[class_num].append((np.ones_like(nms_scores) * iter).astype(int).tolist())
 
             # all_bboxes.append(pred_boxes)
             # all_scores.append(pred_scores)
             # all_classes.append(pred_index)
 
             # TODO (Q2.3): visualize bounding box predictions when required
-            if USE_WANDB_IMAGE:
+            if USE_WANDB_IMAGE and iter in images_to_plot and epoch == epoch_to_plot[-1]:
                 rois_image = wandb.Image(image.cpu().detach(),
                                          boxes={
                                              "predictions": {
@@ -307,10 +307,10 @@ def train_model(model, train_loader=None, val_loader=None, optimizer=None, args=
 
             # TODO (Q2.2): evaluate the model every N iterations (N defined in handout)
             # Add wandb logging wherever necessary
-            # map, aps = test_model(model, val_loader, wandb=wandb)
+            map, aps = test_model(model, val_loader, wandb=wandb, epoch=epoch)
             if iter % args.val_interval == 0 and iter != 0:
                 model.eval()
-                map, aps = test_model(model, val_loader, wandb=wandb)
+                map, aps = test_model(model, val_loader, wandb=wandb, epoch=epoch)
                 print("AP ", aps)
                 model.train()
 
