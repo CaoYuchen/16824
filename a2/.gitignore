@@ -5,4 +5,6 @@ gan/datasets/
 diffusion/data_ddpm/
 diffusion/data_ddim/
 
+**/datasets
+
 __pycache__
