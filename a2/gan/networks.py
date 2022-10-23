@@ -17,6 +17,13 @@ class UpSampleConv2D(jit.ScriptModule):
     ):
         super(UpSampleConv2D, self).__init__()
 
+        self.upscale_factor = upscale_factor
+        self.conv = nn.Conv2d(input_channels,
+                              n_filters,
+                              kernel_size,
+                              stride=1,
+                              padding=padding)
+
     @jit.script_method
     def forward(self, x):
         # TODO 1.1: Implement nearest neighbor upsampling.
@@ -25,7 +32,11 @@ class UpSampleConv2D(jit.ScriptModule):
         # 3. Apply convolution.
         # Hint for 2. look at
         # https://pytorch.org/docs/master/generated/torch.nn.PixelShuffle.html#torch.nn.PixelShuffle
-        pass
+        x = x.repeat_interleave(int(self.upscale_factor ** 2), dim=1)
+        x = F.pixel_shuffle(x, self.upscale_factor)
+        out = self.conv(x)
+
+        return out
 
 
 class DownSampleConv2D(jit.ScriptModule):
@@ -36,6 +47,13 @@ class DownSampleConv2D(jit.ScriptModule):
     ):
         super(DownSampleConv2D, self).__init__()
 
+        self.downscale_ratio = downscale_ratio
+        self.conv = nn.Conv2d(input_channels,
+                              n_filters,
+                              kernel_size,
+                              stride=1,
+                              padding=padding)
+
     @jit.script_method
     def forward(self, x):
         # TODO 1.1: Implement spatial mean pooling.
@@ -44,7 +62,14 @@ class DownSampleConv2D(jit.ScriptModule):
         # 3. Average the images into one and apply convolution.
         # Hint for 1. look at
         # https://pytorch.org/docs/master/generated/torch.nn.PixelUnshuffle.html#torch.nn.PixelUnshuffle
-        pass
+        x = F.pixel_unshuffle(x, self.downscale_ratio)
+        x = torch.mean(x.reshape(x.size(0),
+                                 -1,
+                                 int(self.downscale_ratio ** 2),
+                                 x.size(2),
+                                 x.size(3)),
+                       dim=2)
+        out = self.conv(x)
 
 
 class ResBlockUp(jit.ScriptModule):
