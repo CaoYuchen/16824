@@ -8,12 +8,12 @@ class UpSampleConv2D(jit.ScriptModule):
     # TODO 1.1: Implement nearest neighbor upsampling + conv layer
 
     def __init__(
-        self,
-        input_channels,
-        kernel_size=3,
-        n_filters=128,
-        upscale_factor=2,
-        padding=0,
+            self,
+            input_channels,
+            kernel_size=3,
+            n_filters=128,
+            upscale_factor=2,
+            padding=0,
     ):
         super(UpSampleConv2D, self).__init__()
 
@@ -21,7 +21,7 @@ class UpSampleConv2D(jit.ScriptModule):
         self.conv = nn.Conv2d(input_channels,
                               n_filters,
                               kernel_size,
-                              stride=1,
+                              stride=(1, 1),
                               padding=padding)
 
     @jit.script_method
@@ -43,7 +43,7 @@ class DownSampleConv2D(jit.ScriptModule):
     # TODO 1.1: Implement spatial mean pooling + conv layer
 
     def __init__(
-        self, input_channels, kernel_size=3, n_filters=128, downscale_ratio=2, padding=0
+            self, input_channels, kernel_size=3, n_filters=128, downscale_ratio=2, padding=0
     ):
         super(DownSampleConv2D, self).__init__()
 
@@ -51,7 +51,7 @@ class DownSampleConv2D(jit.ScriptModule):
         self.conv = nn.Conv2d(input_channels,
                               n_filters,
                               kernel_size,
-                              stride=1,
+                              stride=(1, 1),
                               padding=padding)
 
     @jit.script_method
@@ -210,6 +210,7 @@ class Reshape(nn.Module):
 
     def forward(self, x):
         return x.reshape(self.shape)
+
 
 class Generator(jit.ScriptModule):
     # TODO 1.1: Impement Generator. Follow the architecture described below:
