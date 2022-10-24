@@ -33,6 +33,9 @@ if __name__ == "__main__":
     prefix = "data_gan/"
     os.makedirs(prefix, exist_ok=True)
 
+    # gen = torch.jit.load('data_gan/generator.pt', map_location='cuda')
+    # disc = torch.jit.load('data_gan/discriminator.pt', map_location='cuda')
+
     # TODO 1.3.2: Run this line of code.
     train_model(
         gen,
