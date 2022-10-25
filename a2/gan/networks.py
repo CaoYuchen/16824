@@ -14,6 +14,7 @@ class UpSampleConv2D(jit.ScriptModule):
             n_filters=128,
             upscale_factor=2,
             padding=0,
+            stride=1
     ):
         super(UpSampleConv2D, self).__init__()
 
@@ -21,7 +22,7 @@ class UpSampleConv2D(jit.ScriptModule):
         self.conv = nn.Conv2d(input_channels,
                               n_filters,
                               kernel_size,
-                              stride=(1, 1),
+                              stride=stride,
                               padding=padding)
 
     @jit.script_method
@@ -43,7 +44,7 @@ class DownSampleConv2D(jit.ScriptModule):
     # TODO 1.1: Implement spatial mean pooling + conv layer
 
     def __init__(
-            self, input_channels, kernel_size=3, n_filters=128, downscale_ratio=2, padding=0
+            self, input_channels, kernel_size=3, n_filters=128, downscale_ratio=2, padding=0, stride=1
     ):
         super(DownSampleConv2D, self).__init__()
 
@@ -51,7 +52,7 @@ class DownSampleConv2D(jit.ScriptModule):
         self.conv = nn.Conv2d(input_channels,
                               n_filters,
                               kernel_size,
-                              stride=(1, 1),
+                              stride=stride,
                               padding=padding)
 
     @jit.script_method
@@ -70,6 +71,8 @@ class DownSampleConv2D(jit.ScriptModule):
                                  x.size(3)),
                        dim=2)
         out = self.conv(x)
+
+        return out
 
 
 class ResBlockUp(jit.ScriptModule):
@@ -100,14 +103,14 @@ class ResBlockUp(jit.ScriptModule):
             nn.Conv2d(input_channels,
                       n_filters,
                       kernel_size=kernel_size,
-                      stride=(1, 1),
-                      padding=(1, 1),
+                      stride=1,
+                      padding=1,
                       bias=False),
             nn.BatchNorm2d(n_filters),
             nn.ReLU()
         )
 
-        self.residual = UpSampleConv2D(n_filters, padding=1)
+        self.residual = UpSampleConv2D(n_filters, kernel_size=3, padding=1)
         self.shortcut = UpSampleConv2D(input_channels, kernel_size=1)
 
     @jit.script_method
@@ -146,13 +149,13 @@ class ResBlockDown(jit.ScriptModule):
             nn.Conv2d(input_channels,
                       n_filters,
                       kernel_size=kernel_size,
-                      stride=(1, 1),
-                      padding=(1, 1)),
+                      stride=1,
+                      padding=1),
             nn.ReLU()
         )
 
-        self.residual = DownSampleConv2D(n_filters, padding=1)
-        self.shortcut = DownSampleConv2D(input_channels, kernel_size=1)
+        self.residual = DownSampleConv2D(n_filters, kernel_size=kernel_size, n_filters=n_filters, padding=1)
+        self.shortcut = DownSampleConv2D(input_channels, kernel_size=1, n_filters=n_filters)
 
     @jit.script_method
     def forward(self, x):

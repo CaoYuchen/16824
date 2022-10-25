@@ -6,6 +6,9 @@ from networks import Discriminator, Generator
 import torch.nn.functional as F
 from train import train_model
 
+import os
+os.environ["PYTORCH_JIT"] = "0"
+
 
 def compute_discriminator_loss(
     discrim_real, discrim_fake, discrim_interp, interp, lamb
