@@ -122,8 +122,8 @@ def train_model(
                 )
             optim_discriminator.zero_grad(set_to_none=True)
             scaler.scale(discriminator_loss).backward()
-            scaler.step(optim_discriminator)
             scheduler_discriminator.step()
+            scaler.step(optim_discriminator)
 
             if iters % 5 == 0:
                 with torch.cuda.amp.autocast():
@@ -134,8 +134,8 @@ def train_model(
                     generator_loss = gen_loss_fn(discrim_fake)
                 optim_generator.zero_grad(set_to_none=True)
                 scaler.scale(generator_loss).backward()
-                scaler.step(optim_generator)
                 scheduler_generator.step()
+                scaler.step(optim_generator)
 
             if iters % log_period == 0 and iters != 0:
                 with torch.no_grad():

@@ -6,7 +6,6 @@ from networks import Discriminator, Generator
 import torch.nn.functional as F
 from train import train_model
 
-import os
 os.environ["PYTORCH_JIT"] = "0"
 
 
