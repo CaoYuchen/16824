@@ -6,7 +6,8 @@ from networks import Discriminator, Generator
 import torch.nn.functional as F
 from train import train_model
 
-os.environ["PYTORCH_JIT"] = "0"
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["PYTORCH_JIT"] = "1"
 
 
 def compute_discriminator_loss(
