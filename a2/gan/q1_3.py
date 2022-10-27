@@ -15,8 +15,8 @@ def compute_discriminator_loss(
 ):
     # TODO 1.3.1: Implement GAN loss for discriminator.
     # Do not use discrim_interp, interp, lamb. They are placeholders for Q1.5.
-    real_labels = torch.ones_like(discrim_real)
-    fake_labels = torch.zeros_like(discrim_fake)
+    real_labels = torch.ones_like(discrim_real).cuda()
+    fake_labels = torch.zeros_like(discrim_fake).cuda()
 
     return torch.nn.BCEWithLogitsLoss()(torch.hstack((discrim_real,
                                                       discrim_fake)),
@@ -27,7 +27,7 @@ def compute_discriminator_loss(
 def compute_generator_loss(discrim_fake):
     # TODO 1.3.1: Implement GAN loss for generator.
     return torch.nn.BCEWithLogitsLoss()(discrim_fake,
-                                        torch.ones_like(discrim_fake))
+                                        torch.ones_like(discrim_fake).cuda())
 
 
 if __name__ == "__main__":

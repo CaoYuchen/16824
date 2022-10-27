@@ -12,13 +12,13 @@ def compute_discriminator_loss(
 ):
     # TODO 1.4.1: Implement LSGAN loss for discriminator.
     # Do not use discrim_interp, interp, lamb. They are placeholders for Q1.5.
-    return 0.5 * torch.nn.MSELoss()(discrim_real, torch.ones_like(discrim_real)) + \
-        0.5 * torch.nn.MSELoss()(discrim_fake, torch.zeros_like(discrim_fake))
+    return 0.5 * torch.nn.MSELoss()(discrim_real, torch.ones_like(discrim_real).cuda()) + \
+        0.5 * torch.nn.MSELoss()(discrim_fake, torch.zeros_like(discrim_fake).cuda())
 
 
 def compute_generator_loss(discrim_fake):
     # TODO 1.4.1: Implement LSGAN loss for generator.
-    return 0.5 * torch.nn.MSELoss()(discrim_fake, torch.ones_like(discrim_fake))
+    return 0.5 * torch.nn.MSELoss()(discrim_fake, torch.ones_like(discrim_fake).cuda())
 
 
 if __name__ == "__main__":

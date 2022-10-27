@@ -192,34 +192,34 @@ if __name__ == '__main__':
     # )
     if model == 'ae_latent':
         main('ae_latent' + str(latent_dim),
-         loss_mode = 'ae',
-         num_epochs = 20,
-         latent_size = latent_dim)
+             loss_mode='ae',
+             num_epochs=20,
+             latent_size=latent_dim)
 
     elif model == 'vae_latent':
         main('vae_latent' + str(latent_dim),
-             loss_mode = 'vae',
-             num_epochs = 20,
-             latent_size = latent_dim)
+             loss_mode='vae',
+             num_epochs=20,
+             latent_size=latent_dim)
 
     elif model == 'vae_latent1024_beta_constant':
         main('vae_latent1024_beta_constant' + str(beta),
-             loss_mode = 'vae',
-             beta_mode = 'constant',
-             target_beta_val = beta,
-             num_epochs = 20,
-             latent_size = 1024)
+             loss_mode='vae',
+             beta_mode='constant',
+             target_beta_val=beta,
+             num_epochs=20,
+             latent_size=1024)
 
     elif model == 'vae_latent1024_beta_linear1':
         main('vae_latent1024_beta_linear1',
-             loss_mode = 'vae',
-             beta_mode = 'linear',
-             target_beta_val = 1,
-             num_epochs = 20,
-             latent_size = 1024)
+             loss_mode='vae',
+             beta_mode='linear',
+             target_beta_val=1,
+             num_epochs=20,
+             latent_size=1024)
 
     else:
-      print('You messed up :)')
+        print('Wrong model')
 
     print('Train Total:', train_loss_total)
     print('Train recon:', train_loss_recon)
