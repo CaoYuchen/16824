@@ -6,5 +6,6 @@ diffusion/data_ddpm/
 diffusion/data_ddim/
 
 **/datasets
+**/data
 
 __pycache__

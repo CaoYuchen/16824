@@ -66,7 +66,7 @@ class Decoder(nn.Module):
         self.output_shape = output_shape
 
         #TODO 2.1.1: fill in self.base_size
-        self.base_size = ...
+        self.base_size = [128, self.output_shape[1] // 8, self.output_shape[2] // 8]
         self.fc = nn.Linear(latent_dim, np.prod(self.base_size))
         
         """

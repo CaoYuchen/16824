@@ -113,9 +113,9 @@ def get_val_metrics(model, loss_mode, val_loader):
         for x, _ in val_loader:
             x = preprocess_data(x)
             if loss_mode == 'ae':
-                _, _metric = ae_loss(model, x)
+                _, _metric = ae_loss(model, x, is_train=False)
             elif loss_mode == 'vae':
-                _, _metric = vae_loss(model, x)
+                _, _metric = vae_loss(model, x, is_train=False)
             all_metrics.append(_metric)
 
     return avg_dict(all_metrics)
@@ -210,8 +210,8 @@ if __name__ == '__main__':
              num_epochs=20,
              latent_size=1024)
 
-    elif model == 'vae_latent1024_beta_linear1':
-        main('vae_latent1024_beta_linear1',
+    elif model == 'vae_latent1024_beta_linear':
+        main('vae_latent1024_beta_linear',
              loss_mode='vae',
              beta_mode='linear',
              target_beta_val=1,
