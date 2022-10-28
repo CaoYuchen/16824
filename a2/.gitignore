@@ -7,5 +7,6 @@ diffusion/data_ddim/
 
 **/datasets
 **/data
+**/plots
 
 __pycache__

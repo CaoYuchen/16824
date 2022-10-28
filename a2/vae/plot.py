@@ -55,20 +55,93 @@ bvae_validate_total_loss_lin = np.array([3136.41845703125, 2936.25048828125, 300
 n_epochs = 20
 batch_size = 40
 x = list(range(n_epochs))
+# print(ae_validate_recon_loss16.shape)
+# print(ae_validate_recon_loss128.shape)
+# print(ae_validate_recon_loss1024.shape)
+# print(vae_validate_kl_loss1024.shape)
+# print(vae_validate_recon_loss1024.shape)
+# print(vae_validate_total_loss1024.shape)
 
-assert ae_train_recon_loss16.shape[0] == batch_size * n_epochs
-assert ae_train_recon_loss128.shape[0] == batch_size * n_epochs
-assert ae_train_recon_loss1024.shape[0] == batch_size * n_epochs
+# plot of ae
+ae_validate_recon_loss16 = ae_validate_recon_loss16.reshape(n_epochs, batch_size)
+ae_validate_recon_loss128 = ae_validate_recon_loss128.reshape(n_epochs, batch_size)
+ae_validate_recon_loss1024 = ae_validate_recon_loss1024.reshape(n_epochs, batch_size)
 
-ae_train_recon_loss16 = ae_train_recon_loss16.reshape(n_epochs, batch_size)
-ae_train_recon_loss128 = ae_train_recon_loss128.reshape(n_epochs, batch_size)
-ae_train_recon_loss1024 = ae_train_recon_loss1024.reshape(n_epochs, batch_size)
+plt.plot(x, np.mean(ae_validate_recon_loss16, axis=1), 'ro-', label='Latent Dim: 16')
+plt.plot(x, np.mean(ae_validate_recon_loss128, axis=1), 'bo-', label='Latent Dim: 128')
+plt.plot(x, np.mean(ae_validate_recon_loss1024, axis=1), 'go-', label='Latent Dim: 1024')
 
-plt.plot(x, np.mean(ae_train_recon_loss16, axis=1), 'ro-', label='Latent Dim: 16')
-plt.plot(x, np.mean(ae_train_recon_loss128, axis=1), 'bo-', label='Latent Dim: 128')
-plt.plot(x, np.mean(ae_train_recon_loss1024, axis=1), 'go-', label='Latent Dim: 1024')
 plt.legend()
-plt.xticks(list(range( 20)))
+plt.xticks(list(range(n_epochs)))
 plt.title('Autoencoder Validation Reconstruction Loss')
 plt.savefig('plots/ae_val_recon_loss.png')
 plt.show()
+
+
+
+#plot of vae
+vae_validate_recon_loss1024 = vae_validate_recon_loss1024.reshape(n_epochs, batch_size)
+
+plt.plot(x, np.mean(vae_validate_recon_loss1024, axis=1), 'go-', label='Latent Dim: 1024')
+plt.legend()
+plt.xticks(list(range(n_epochs)))
+plt.title('VAE Validation Reconstruction Loss')
+plt.savefig('plots/vae_val_recon_loss.png')
+plt.show()
+
+vae_validate_kl_loss1024 = vae_validate_kl_loss1024.reshape(n_epochs, batch_size)
+plt.plot(x, np.mean(vae_validate_kl_loss1024, axis=1), 'go-', label='Latent Dim: 1024')
+plt.legend()
+plt.xticks(list(range(n_epochs)))
+plt.title('VAE Validation KL Loss')
+plt.savefig('plots/vae_val_kl_loss.png')
+plt.show()
+
+
+
+# plot of bvae
+bvae_validate_recon_loss_0_8 = bvae_validate_recon_loss_0_8.reshape(n_epochs, batch_size)
+bvae_validate_recon_loss_1_0 = bvae_validate_recon_loss_1_0.reshape(n_epochs, batch_size)
+bvae_validate_recon_loss_1_2 = bvae_validate_recon_loss_1_2.reshape(n_epochs, batch_size)
+
+plt.plot(x, np.mean(bvae_validate_recon_loss_0_8, axis=1), 'ro-', label='Beta: 0.8')
+plt.plot(x, np.mean(bvae_validate_recon_loss_1_0, axis=1), 'bo-', label='Beta: 1')
+plt.plot(x, np.mean(bvae_validate_recon_loss_1_2, axis=1), 'go-', label='Beta: 1.2')
+plt.xticks(list(range(n_epochs)))
+plt.legend()
+plt.title('Beta VAE Validation Reconstruction Loss')
+plt.savefig('plots/beta_vae_val_recon_loss.png')
+plt.show()
+
+bvae_validate_recon_loss_0_8 = bvae_validate_recon_loss_0_8.reshape(n_epochs, batch_size)
+bvae_validate_recon_loss_1_0 = bvae_validate_recon_loss_1_0.reshape(n_epochs, batch_size)
+bvae_validate_recon_loss_1_2 = bvae_validate_recon_loss_1_2.reshape(n_epochs, batch_size)
+
+plt.plot(x, np.mean(bvae_validate_recon_loss_0_8, axis=1), 'ro-', label='Beta: 0.8')
+plt.plot(x, np.mean(bvae_validate_recon_loss_1_0, axis=1), 'bo-', label='Beta: 1')
+plt.plot(x, np.mean(bvae_validate_recon_loss_1_2, axis=1), 'go-', label='Beta: 1.2')
+plt.xticks(list(range(n_epochs)))
+plt.legend()
+plt.title('Beta VAE Validation KL Loss')
+plt.savefig('plots/beta_vae_val_kl_loss.png')
+plt.show()
+
+# plot of vae linear
+bvae_validate_recon_loss_lin = bvae_validate_recon_loss_lin.reshape(n_epochs, batch_size)
+
+plt.plot(x, np.mean(bvae_validate_recon_loss_lin, axis=1), 'go-', label='Latent Dim: 1024')
+plt.legend()
+plt.xticks(list(range(n_epochs)))
+plt.title('Linear VAE Validation Reconstruction Loss')
+plt.savefig('plots/bae_val_recon_loss_lin.png')
+plt.show()
+
+bvae_validate_kl_loss_lin = bvae_validate_kl_loss_lin.reshape(n_epochs, batch_size)
+plt.plot(x, np.mean(bvae_validate_kl_loss_lin, axis=1), 'go-', label='Latent Dim: 1024')
+plt.legend()
+plt.xticks(list(range(n_epochs)))
+plt.title('Linear VAE Validation KL Loss')
+plt.savefig('plots/bae_val_kl_loss_lin.png')
+plt.show()
+
+
