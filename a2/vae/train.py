@@ -22,6 +22,8 @@ val_loss_kl = []
 val_loss_recon = []
 val_loss_total = []
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["PYTORCH_JIT"] = "1"
 
 def ae_loss(model, x, is_train=True):
     """ 
