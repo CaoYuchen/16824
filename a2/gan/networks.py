@@ -64,6 +64,7 @@ class DownSampleConv2D(jit.ScriptModule):
         # Hint for 1. look at
         # https://pytorch.org/docs/master/generated/torch.nn.PixelUnshuffle.html#torch.nn.PixelUnshuffle
         x = F.pixel_unshuffle(x, self.downscale_ratio)
+        # put the dim=2 as the r^2, and calculate the mean along dim=2
         x = torch.mean(x.reshape(x.size(0),
                                  -1,
                                  int(self.downscale_ratio ** 2),
