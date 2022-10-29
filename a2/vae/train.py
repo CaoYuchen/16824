@@ -36,10 +36,8 @@ def ae_loss(model, x, is_train=True):
     loss = nn.MSELoss(reduction='sum')(out, x) / x.size(0)
 
     if is_train:
-        train_loss_recon.append(loss.item())
         train_loss_total.append(loss.item())
     else:
-        val_loss_recon.append(loss.item())
         val_loss_total.append(loss.item())
 
     return loss, OrderedDict(recon_loss=loss)
@@ -60,12 +58,12 @@ def vae_loss(model, x, beta=1, is_train=True):
     total_loss = recon_loss + beta * kl_loss
 
     if is_train:
-        train_loss_recon.append(recon_loss.item())
         train_loss_kl.append(kl_loss.item())
+        train_loss_recon.append(recon_loss.item())
         train_loss_total.append(total_loss.item())
     else:
-        val_loss_recon.append(recon_loss.item())
         val_loss_kl.append(kl_loss.item())
+        val_loss_recon.append(recon_loss.item())
         val_loss_total.append(total_loss.item())
 
     return total_loss, OrderedDict(recon_loss=recon_loss, kl_loss=kl_loss)
@@ -159,15 +157,15 @@ def main(log_dir, loss_mode='vae', beta_mode='constant', num_epochs=20, batch_si
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model',
-                        help="Defines the model to train.",
+                        help="The model name.",
                         type=str,
                         default=None)
     parser.add_argument('--latent-dim',
-                        help="Defines the latent dim.",
+                        help="The dimension of latent space.",
                         type=int,
                         default=1024)
     parser.add_argument('--beta',
-                        help="Defines the beta.",
+                        help="The beta for VAE.",
                         type=float,
                         default=1)
     args = parser.parse_args()

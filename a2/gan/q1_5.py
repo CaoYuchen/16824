@@ -19,16 +19,16 @@ def compute_discriminator_loss(
                                retain_graph=True)[0]
     grad = grad.reshape(interp.size(0), -1)
 
-    loss = torch.mean(discrim_fake) - torch.mean(discrim_real) + \
+    disc_loss = torch.mean(discrim_fake) - torch.mean(discrim_real) + \
         lamb * torch.mean((torch.linalg.norm(grad, dim=-1) - 1) ** 2)
-    return loss
+    return disc_loss
 
 
 def compute_generator_loss(discrim_fake):
     # TODO 1.5.1: Implement WGAN-GP loss for generator.
     # loss = - E[D(fake_data)]
-    loss = - torch.mean(discrim_fake)
-    return loss
+    gan_loss = - torch.mean(discrim_fake)
+    return gan_loss
 
 
 if __name__ == "__main__":
