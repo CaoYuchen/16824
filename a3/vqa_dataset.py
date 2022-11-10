@@ -38,6 +38,7 @@ class VQADataset(Dataset):
         self.answer_list_length = answer_list_length + 1
         self.unknown_answer_index = answer_list_length
         self.size = size
+        self.question_id = self._vqa.get_ques_ids()
 
         # Create the answer map if necessary
         keys = sorted(self._vqa.qa.keys())
@@ -71,7 +72,7 @@ class VQADataset(Dataset):
         return {tup[0]: t for t, tup in enumerate(common)}
 
     def __len__(self):
-        return TODO
+        return len(self.question_id)
 
     def __getitem__(self, idx):
         """
