@@ -210,7 +210,7 @@ class VQA:
 
 if __name__ == "__main__":
     # Examples
-    data_path = './'  # change this to your data path
+    data_path = './data/'  # change this to your data path
     anno_file = data_path + 'mscoco_train2014_annotations.json'
     q_file = data_path + 'OpenEnded_mscoco_train2014_questions.json'
     vqa_api = VQA(anno_file, q_file)
