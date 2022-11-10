@@ -29,7 +29,7 @@ class VQADataset(Dataset):
             image_filename_pattern (str): The pattern the filenames
                 (eg "COCO_train2014_{}.jpg")
         """
-        self._vqa = TODO  # load the VQA api
+        self._vqa = VQA(annotation_json_file_path, question_json_file_path)  # load the VQA api
         # also initialize whatever you need from self._vqa
         self._image_dir = image_dir
         self._image_filename_pattern = image_filename_pattern
