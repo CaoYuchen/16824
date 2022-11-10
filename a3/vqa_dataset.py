@@ -33,12 +33,12 @@ class VQADataset(Dataset):
         # also initialize whatever you need from self._vqa
         self._image_dir = image_dir
         self._image_filename_pattern = image_filename_pattern
+        self._question_id = self._vqa.get_ques_ids()
 
         # Publicly accessible dataset parameters
         self.answer_list_length = answer_list_length + 1
         self.unknown_answer_index = answer_list_length
         self.size = size
-        self.question_id = self._vqa.get_ques_ids()
 
         # Create the answer map if necessary
         keys = sorted(self._vqa.qa.keys())
@@ -72,7 +72,7 @@ class VQADataset(Dataset):
         return {tup[0]: t for t, tup in enumerate(common)}
 
     def __len__(self):
-        return len(self.question_id)
+        return len(self._question_id)
 
     def __getitem__(self, idx):
         """
@@ -84,7 +84,7 @@ class VQADataset(Dataset):
         Returns:
             A dict containing torch tensors for image, question and answers
         """
-        q_anno = TODO  # load annotation
+        q_anno = self._vqa.qqa[self._question_id[idx]]  # load annotation
         q_str = TODO  # question in str format
 
         # Load and pre-process image
