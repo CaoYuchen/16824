@@ -103,22 +103,24 @@ class Trainer:
             # pos_weight[-1] = 0.1  # 'Other' has lower weight
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
-            loss = 0
+            loss = F.binary_cross_entropy(F.sigmoid(scores), answers)
 
             # Update
             if mode == 'train':
                 # optimize loss
-                pass
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
             # Accuracy
             n_samples += len(scores)
             found = (
-                F.one_hot(scores.argmax(1), scores.size(1))
-                * answers
+                    F.one_hot(scores.argmax(1), scores.size(1))
+                    * answers
             ).sum(1)
             n_correct += (
-                F.one_hot(scores.argmax(1), scores.size(1))
-                * answers
+                    F.one_hot(scores.argmax(1), scores.size(1))
+                    * answers
             ).sum().item()  # checks if argmax matches any ground-truth
 
             # Logging
