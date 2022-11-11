@@ -103,12 +103,12 @@ class Trainer:
             # pos_weight[-1] = 0.1  # 'Other' has lower weight
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
-            loss = TODO
+            loss = 0
 
             # Update
             if mode == 'train':
                 # optimize loss
-                TODO
+                pass
 
             # Accuracy
             n_samples += len(scores)
