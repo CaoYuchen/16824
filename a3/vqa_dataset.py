@@ -85,7 +85,7 @@ class VQADataset(Dataset):
             A dict containing torch tensors for image, question and answers
         """
         q_anno = self._vqa.qqa[self._question_id[idx]]  # load annotation
-        q_str = TODO  # question in str format
+        q_str = q_anno['question']  # question in str format
 
         # Load and pre-process image
         name = str(q_anno['image_id'])
