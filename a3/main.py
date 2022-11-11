@@ -99,11 +99,11 @@ class Trainer:
 
             # Losses
             # Uncomment these if you want to assign less weight to 'other'
-            # pos_weight = torch.ones_like(answers[0])
-            # pos_weight[-1] = 0.1  # 'Other' has lower weight
+            pos_weight = torch.ones_like(answers[0])
+            pos_weight[-1] = 0.1  # 'Other' has lower weight
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
-            loss = F.binary_cross_entropy(torch.sigmoid(scores), answers)
+            loss = F.binary_cross_entropy(torch.sigmoid(scores * pos_weight), answers)
 
             # Update
             if mode == 'train':
