@@ -37,9 +37,6 @@ class BaselineNet(nn.Module):
         for param in self.vis_encoder.parameters():
             param.requires_grad = False
 
-        print(self.tokenizer)
-        print(self.text_encoder)
-        print(self.vis_encoder)
         # Classifier
         self.classifier = nn.Linear(
             self.text_encoder.config.hidden_size + 512,
