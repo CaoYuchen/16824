@@ -1,2 +1,5 @@
 transformers
 tensorboard
+numpy
+pillow
+setuptools==59.5.0
