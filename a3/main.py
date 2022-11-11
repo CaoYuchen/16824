@@ -103,7 +103,7 @@ class Trainer:
             # pos_weight[-1] = 0.1  # 'Other' has lower weight
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
-            loss = F.binary_cross_entropy(F.sigmoid(scores), answers)
+            loss = F.binary_cross_entropy(torch.sigmoid(scores), answers)
 
             # Update
             if mode == 'train':
