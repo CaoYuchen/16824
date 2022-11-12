@@ -125,10 +125,10 @@ class Trainer:
 
             # Logging
             self.writer.add_scalar(
-                'Loss/' + mode, loss.item(),
+                mode + '/Loss', loss.item(),
                 epoch * len(self.data_loaders[mode]) + step
             )
-            if mode == 'val' and step == 0:  # change this to show other images
+            if mode == 'val' and step == 7:  # change this to show other images
                 _n_show = 3  # how many images to plot
                 for i in range(_n_show):
                     self.writer.add_image(
@@ -141,8 +141,14 @@ class Trainer:
                     # if your model's prediction is correct,
                     # show the predicted answer as gt
                     # so as to avoid confusion due to multiple correct answers
-            # add code to plot the current accuracy
+                    self.writer.add_text('Question%d' % i, data['question'][i], epoch * _n_show + i)
+                    self.writer.add_text('GT Answer%d' % i, self._id2answer[data['answers'][i].argmax().item()],
+                                         epoch * _n_show + i)
+                    self.writer.add_text('Pred Answer%d' % i, self._id2answer[found[i].item()],
+                                         epoch * _n_show + i)
+        # add code to plot the current accuracy
         acc = n_correct / n_samples
+        self.writer.add_scalar(mode + '/Accuracy', acc, epoch)
         print(acc)
         return acc
 
