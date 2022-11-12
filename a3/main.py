@@ -12,6 +12,8 @@ from tqdm import tqdm
 from models import BaselineNet, TransformerNet
 from vqa_dataset import VQADataset
 
+import matplotlib.pyplot as plt
+
 
 class Trainer:
     """Train/test models on manipulation."""
@@ -32,6 +34,8 @@ class Trainer:
             for k, v in data_loaders['val'].dataset.answer_to_id_map.items()
         }
         self._id2answer[len(self._id2answer)] = 'Other'
+
+        self.histogram_pred = [0] * len(self._id2answer)
 
     def run(self):
         # Set
@@ -86,6 +90,17 @@ class Trainer:
         val_acc_prev_best = ckpnt['best_acc']
         return start_epoch, val_acc_prev_best
 
+    def plot_histogram(self):
+        x_value = sorted(range(len(self.histogram_pred)), key=self.histogram_pred.__getitem__, reverse=True)
+        self.histogram_pred.sort(reverse=True)
+        plt.bar(x_value, self.histogram_pred, width=0.8, bottom=None, align="center")
+        plt.ylabel("Loss in ${0}'s".format(value_increment))
+        plt.yticks(values * value_increment, ['%d' % val for val in values])
+        plt.xticks([])
+        plt.title('Histogram of Frequency')
+
+        plt.show()
+
     def train_test_loop(self, mode='train', epoch=1000):
         n_correct, n_samples = 0, 0
         for step, data in tqdm(enumerate(self.data_loaders[mode])):
@@ -103,7 +118,8 @@ class Trainer:
             pos_weight[-1] = 0.1  # 'Other' has lower weight
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
-            loss = F.binary_cross_entropy(torch.sigmoid(scores * pos_weight), answers)
+            # loss = F.binary_cross_entropy(torch.sigmoid(scores * pos_weight), answers)
+            loss = F.binary_cross_entropy(torch.sigmoid(scores), answers)
 
             # Update
             if mode == 'train':
@@ -122,6 +138,10 @@ class Trainer:
                     F.one_hot(scores.argmax(1), scores.size(1))
                     * answers
             ).sum().item()  # checks if argmax matches any ground-truth
+
+            # histogram record
+            for f in found:
+                self.histogram_pred[f] += 1
 
             # Logging
             self.writer.add_scalar(
