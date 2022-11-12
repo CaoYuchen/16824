@@ -102,7 +102,7 @@ class Trainer:
         plt.title('Histogram of Frequency')
         plt.show()
 
-        print("10 most accurate are:", self._id2answer[x_value[:10]])
+        print("10 most accurate are: ", [self._id2answer[x] for x in x_value[:10]])
 
     def train_test_loop(self, mode='train', epoch=1000):
         n_correct, n_samples = 0, 0
@@ -121,7 +121,7 @@ class Trainer:
             pos_weight[-1] = 0.1  # 'Other' has lower weight
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
-            # loss = F.binary_cross_entropy(torch.sigmoid(scores), answers * pos_weight)
+            # loss = F.binary_cross_entropy(torch.sigmoid(scores)* pos_weight, answers)
             loss = F.binary_cross_entropy(torch.sigmoid(scores), answers)
 
             # Update
@@ -143,7 +143,7 @@ class Trainer:
             ).sum().item()  # checks if argmax matches any ground-truth
 
             # histogram record
-            for f in found:
+            for f in found.cpu().numpy().astype("int32"):
                 self.histogram_pred[f] += 1
 
             # Logging
