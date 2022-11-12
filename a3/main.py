@@ -93,13 +93,15 @@ class Trainer:
     def plot_histogram(self):
         x_value = sorted(range(len(self.histogram_pred)), key=self.histogram_pred.__getitem__, reverse=True)
         self.histogram_pred.sort(reverse=True)
-        plt.bar(x_value, self.histogram_pred, width=0.8, bottom=None, align="center")
-        plt.ylabel("Loss in ${0}'s".format(value_increment))
-        plt.yticks(values * value_increment, ['%d' % val for val in values])
-        plt.xticks([])
+        x_axis = [h for h in range(len(self.histogram_pred))]
+        plt.bar(x_axis, self.histogram_pred, width=0.8, bottom=None, align="center")
+        plt.ylabel("frequency")
+        plt.xlabel("index")
         plt.title('Histogram of Frequency')
 
         plt.show()
+
+        print("10 most accurate are:", x_value[:10])
 
     def train_test_loop(self, mode='train', epoch=1000):
         n_correct, n_samples = 0, 0
