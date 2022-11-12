@@ -80,6 +80,8 @@ class Trainer:
                 checkpoint["epoch"] += 1
                 torch.save(checkpoint, self.args.ckpnt)
 
+        # plot histogram
+        self.plot_histogram()
         return self.model
 
     def _load_ckpnt(self):
@@ -98,10 +100,9 @@ class Trainer:
         plt.ylabel("frequency")
         plt.xlabel("index")
         plt.title('Histogram of Frequency')
-
         plt.show()
 
-        print("10 most accurate are:", x_value[:10])
+        print("10 most accurate are:", self._id2answer[x_value[:10]])
 
     def train_test_loop(self, mode='train', epoch=1000):
         n_correct, n_samples = 0, 0
