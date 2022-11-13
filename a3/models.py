@@ -42,12 +42,20 @@ class BaselineNet(nn.Module):
             self.text_encoder.config.hidden_size + 512,
             n_answers
         )
+        self.mlp_classifier = nn.Sequential(
+            nn.Linear(self.text_encoder.config.hidden_size + 512, 1024),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(1024, n_answers),
+            nn.Dropout(0.1)
+        )  # hidden dim is 1024
 
     def forward(self, image, question):
         """Forward pass, image (B, 3, 224, 224), qs list of str."""
         x = self.compute_vis_feats(image)
         y = self.compute_text_feats(question)
-        z = self.classifier(torch.cat((x, y), 1))
+        # z = self.classifier(torch.cat((x, y), 1))
+        z = self.mlp_classifier(torch.cat((x, y), 1))
         return z
 
     @torch.no_grad()
