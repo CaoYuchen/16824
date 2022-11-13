@@ -161,8 +161,8 @@ class Trainer:
                 mode + '/Loss', loss.item(),
                 epoch * len(self.data_loaders[mode]) + step
             )
-            if mode == 'val' and step == 7:  # change this to show other images
-                _n_show = 3  # how many images to plot
+            if mode == 'val' and not step % 5:  # change this to show other images
+                _n_show = 20  # how many images to plot
                 for i in range(_n_show):
                     self.writer.add_image(
                         'Image%d' % i, data['orig_img'][i].cpu().numpy(),
@@ -177,7 +177,7 @@ class Trainer:
                     self.writer.add_text('Question%d' % i, data['question'][i], epoch * _n_show + i)
                     self.writer.add_text('GT Answer%d' % i, self._id2answer[data['answers'][i].argmax().item()],
                                          epoch * _n_show + i)
-                    self.writer.add_text('Pred Answer%d' % i, self._id2answer[found[i].item()],
+                    self.writer.add_text('Pred Answer%d' % i, self._id2answer[scores[i].argmax().item()],
                                          epoch * _n_show + i)
         # add code to plot the current accuracy
         acc = n_correct / n_samples
@@ -190,7 +190,7 @@ def main():
     """Run main training/test pipeline."""
     # Feel free to add more args, or change/remove these.
     parser = argparse.ArgumentParser(description='Load VQA.')
-    parser.add_argument('--model', type=str, default='transformer')
+    parser.add_argument('--model', type=str, default='simple')
     parser.add_argument('--tensorboard_dir', type=str, default=None)
     parser.add_argument('--ckpnt', type=str, default=None)
     parser.add_argument('--data_path', type=str, default='./data/')
