@@ -82,7 +82,7 @@ class Trainer:
                 torch.save(checkpoint, self.args.ckpnt)
 
         # plot histogram
-        self.plot_histogram()
+        # self.plot_histogram()
         return self.model
 
     def _load_ckpnt(self):
@@ -146,8 +146,9 @@ class Trainer:
             ).sum().item()  # checks if argmax matches any ground-truth
 
             # histogram record
-            for f in found.cpu().numpy().astype("int32"):
-                self.histogram_pred[f] += 1
+            for i, s in enumerate(scores.argmax(1).cpu().numpy().astype("int32")):
+                if found[i]:
+                    self.histogram_pred[s] += 1
 
             # Logging
             self.writer.add_scalar(
