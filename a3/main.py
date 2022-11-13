@@ -50,6 +50,7 @@ class Trainer:
         if self.args.eval or start_epoch >= self.args.epochs:
             self.model.eval()
             self.train_test_loop('val')
+            self.plot_histogram()
             return self.model
 
         # Go!
