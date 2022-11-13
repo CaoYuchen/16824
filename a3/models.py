@@ -243,7 +243,7 @@ class CrossAttentionLayer(nn.Module):
             key=k2,
             value=v2,
             attn_mask=None,
-            key_padding_mask=seq1_key_padding_mask  # (B, S1)
+            key_padding_mask=seq2_key_padding_mask  # (B, S1)
         )
         ca12 = self.norm_12(seq1 + self.dropout_12(ca12b))
         seq1 = self.norm_122(ca12 + self.ffn_12(ca12.view(ca12.shape[0], -1)).view(ca12.shape))
