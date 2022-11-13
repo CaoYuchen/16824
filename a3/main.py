@@ -182,14 +182,14 @@ def main():
     """Run main training/test pipeline."""
     # Feel free to add more args, or change/remove these.
     parser = argparse.ArgumentParser(description='Load VQA.')
-    parser.add_argument('--model', type=str, default='simple')
+    parser.add_argument('--model', type=str, default='transformer')
     parser.add_argument('--tensorboard_dir', type=str, default=None)
     parser.add_argument('--ckpnt', type=str, default=None)
     parser.add_argument('--data_path', type=str, default='./data/')
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--lr', type=float, default=5e-4)
-    parser.add_argument('--eval', action='store_true')
+    parser.add_argument('--eval', action='store_false')
     args = parser.parse_args()
     data_path = args.data_path
 
