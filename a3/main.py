@@ -122,9 +122,9 @@ class Trainer:
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
             # loss = F.binary_cross_entropy(torch.sigmoid(scores)* pos_weight, answers)
-            # loss = F.binary_cross_entropy(torch.sigmoid(scores), answers)
-            criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-            loss = criterion(scores, answers)
+            loss = F.binary_cross_entropy(torch.sigmoid(scores), answers)
+            # criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+            # loss = criterion(scores, answers)
 
             # Update
             if mode == 'train':

@@ -155,27 +155,33 @@ class CrossAttentionLayer(nn.Module):
         self.norm_1 = nn.LayerNorm(d_model)
 
         # Self-attention for seq2
-        self.sa2 = TODO
-        self.dropout_2 = TODO
-        self.norm_2 = TODO
+        self.sa2 = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout, batch_first=True
+        )
+        self.dropout_2 = nn.Dropout(dropout)
+        self.norm_2 = nn.LayerNorm(d_model)
 
         # Cross attention from seq1 to seq2
-        self.cross_12 = TODO
-        self.dropout_12 = TODO
-        self.norm_12 = TODO
+        self.cross_12 = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout, batch_first=True
+        )
+        self.dropout_12 = nn.Dropout(dropout)
+        self.norm_12 = nn.LayerNorm(d_model)
 
         # FFN for seq1
         self.ffn_12 = nn.Sequential(TODO)  # hidden dim is 1024
-        self.norm_122 = TODO
+        self.norm_122 = nn.LayerNorm(d_model)
 
         # Cross attention from seq2 to seq1
-        self.cross_21 = TODO
-        self.dropout_21 = TODO
-        self.norm_21 = TODO
+        self.cross_21 = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout, batch_first=True
+        )
+        self.dropout_21 = nn.Dropout(dropout)
+        self.norm_21 = nn.LayerNorm(d_model)
 
         # FFN for seq2
         self.ffn_21 = nn.Sequential(TODO)  # hidden dim is 1024
-        self.norm_212 = TODO
+        self.norm_212 = nn.LayerNorm(d_model)
 
     def forward(self, seq1, seq1_key_padding_mask, seq2,
                 seq2_key_padding_mask,
@@ -200,7 +206,14 @@ class CrossAttentionLayer(nn.Module):
         if seq2_pos is not None:
             q2 = q2 + seq2_pos
             k2 = k2 + seq2_pos
-        TODO
+        seq2b = self.sa2(
+            query=q2,
+            key=k2,
+            value=v2,
+            attn_mask=None,
+            key_padding_mask=seq2_key_padding_mask  # (B, S1)
+        )[0]
+        seq2 = self.norm_2(seq2 + self.dropout_2(seq2b))
 
         # Create key, query, value for seq1, seq2
         q1 = k1 = v1 = seq1
