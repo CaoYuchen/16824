@@ -3,3 +3,5 @@ vlr.pem
 **/data/
 *.pt
 **/runs/
+
+__pycache__
