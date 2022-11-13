@@ -170,7 +170,11 @@ class CrossAttentionLayer(nn.Module):
 
         # FFN for seq1
         self.ffn_12 = nn.Sequential(
-            # nn.Linear(,1024)
+            # nn.Linear(,1024),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            # nn.Linear(1024,),
+            nn.Dropout(dropout)
         )  # hidden dim is 1024
         self.norm_122 = nn.LayerNorm(d_model)
 
@@ -182,7 +186,13 @@ class CrossAttentionLayer(nn.Module):
         self.norm_21 = nn.LayerNorm(d_model)
 
         # FFN for seq2
-        self.ffn_21 = nn.Sequential()  # hidden dim is 1024
+        self.ffn_21 = nn.Sequential(
+            # nn.Linear(,1024),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            # nn.Linear(1024,),
+            nn.Dropout(dropout)
+        )  # hidden dim is 1024
         self.norm_212 = nn.LayerNorm(d_model)
 
     def forward(self, seq1, seq1_key_padding_mask, seq2,
@@ -236,7 +246,7 @@ class CrossAttentionLayer(nn.Module):
             key_padding_mask=seq1_key_padding_mask  # (B, S1)
         )
         ca12 = self.norm_12(seq1 + self.dropout_12(ca12b))
-        seq1 = self.norm_122(self.ffn_12(ca12))
+        seq1 = self.norm_122(ca12 + self.ffn_12(ca12.view(ca12.shape[0], -1)).view(ca12.shape))
 
         # Cross-attention from seq2 to seq1 and FFN
         ca21b = self.cross_21(
@@ -247,7 +257,7 @@ class CrossAttentionLayer(nn.Module):
             key_padding_mask=seq1_key_padding_mask  # (B, S1)
         )
         ca21 = self.norm_21(seq2 + self.dropout_21(ca21b))
-        seq2 = self.norm_212(self.ffn_21(ca21))
+        seq2 = self.norm_212(ca21 + self.ffn_21(ca21.view(ca21.shape[0], -1)).view(ca21.shape))
 
         return seq1, seq2
 
