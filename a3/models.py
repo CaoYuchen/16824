@@ -170,10 +170,10 @@ class CrossAttentionLayer(nn.Module):
 
         # FFN for seq1
         self.ffn_12 = nn.Sequential(
-            # nn.Linear(,1024),
+            nn.Linear(12544, 1024),
             nn.ReLU(),
             nn.Dropout(dropout),
-            # nn.Linear(1024,),
+            nn.Linear(1024, 12544),
             nn.Dropout(dropout)
         )  # hidden dim is 1024
         self.norm_122 = nn.LayerNorm(d_model)
@@ -187,10 +187,10 @@ class CrossAttentionLayer(nn.Module):
 
         # FFN for seq2
         self.ffn_21 = nn.Sequential(
-            # nn.Linear(,1024),
+            nn.Linear(5632, 1024),
             nn.ReLU(),
             nn.Dropout(dropout),
-            # nn.Linear(1024,),
+            nn.Linear(1024, 5632),
             nn.Dropout(dropout)
         )  # hidden dim is 1024
         self.norm_212 = nn.LayerNorm(d_model)
@@ -245,7 +245,7 @@ class CrossAttentionLayer(nn.Module):
             attn_mask=None,
             key_padding_mask=seq2_key_padding_mask  # (B, S1)
         )
-        ca12 = self.norm_12(seq1 + self.dropout_12(ca12b))
+        ca12 = self.norm_12(seq1 + self.dropout_12(ca12b[0]))
         seq1 = self.norm_122(ca12 + self.ffn_12(ca12.view(ca12.shape[0], -1)).view(ca12.shape))
 
         # Cross-attention from seq2 to seq1 and FFN
@@ -256,7 +256,7 @@ class CrossAttentionLayer(nn.Module):
             attn_mask=None,
             key_padding_mask=seq1_key_padding_mask  # (B, S1)
         )
-        ca21 = self.norm_21(seq2 + self.dropout_21(ca21b))
+        ca21 = self.norm_21(seq2 + self.dropout_21(ca21b[0]))
         seq2 = self.norm_212(ca21 + self.ffn_21(ca21.view(ca21.shape[0], -1)).view(ca21.shape))
 
         return seq1, seq2
