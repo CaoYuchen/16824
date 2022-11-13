@@ -97,12 +97,18 @@ class Trainer:
         x_value = sorted(range(len(self.histogram_pred)), key=self.histogram_pred.__getitem__, reverse=True)
         self.histogram_pred.sort(reverse=True)
         x_axis = [h for h in range(len(self.histogram_pred))]
-        plt.bar(x_axis, self.histogram_pred, width=0.8, bottom=None, align="center")
-        plt.ylabel("frequency")
-        plt.xlabel("index")
+
+        plt.figure(figsize=(30, 8))
+        plt.bar(x_axis, self.histogram_pred, width=1, bottom=None, align="center")
+        plt.ylim([0, 500])
+        # plt.xlim([0, 300])
+        # plt.ylim([0,1000])
+        plt.ylabel("Frequency")
+        plt.xlabel("Descending Order(It's not index)")
         plt.title('Histogram of Frequency')
         plt.show()
 
+        print("10 highest times are: ", self.histogram_pred[:10])
         print("10 most accurate are: ", [self._id2answer[x] for x in x_value[:10]])
 
     def train_test_loop(self, mode='train', epoch=1000):
