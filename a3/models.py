@@ -43,11 +43,10 @@ class BaselineNet(nn.Module):
             n_answers
         )
         self.mlp_classifier = nn.Sequential(
-            nn.Linear(self.text_encoder.config.hidden_size + 512, 1024),
+            nn.Linear(self.text_encoder.config.hidden_size + 512, 2048),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.Linear(1024, n_answers),
-            nn.Dropout(0.1)
+            nn.Linear(2048, n_answers)
         )  # hidden dim is 1024
 
     def forward(self, image, question):
