@@ -3,5 +3,6 @@ vlr.pem
 **/data/
 *.pt
 **/runs/
-
+*.npz
+scotty
 __pycache__
